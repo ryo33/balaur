@@ -18,7 +18,7 @@ fn app_in(dir: &std::path::Path) -> App {
 
 fn project(files: &[(&str, &str)]) -> tempfile::TempDir {
     let dir = tempfile::tempdir().unwrap();
-    std::fs::write(dir.path().join("project.toml"), "name = \"t\"\n").unwrap();
+    std::fs::write(dir.path().join("project.eure"), "name = \"t\"\n").unwrap();
     for (name, body) in files {
         std::fs::write(dir.path().join(name), body).unwrap();
     }

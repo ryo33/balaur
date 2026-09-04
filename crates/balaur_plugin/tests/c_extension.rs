@@ -85,7 +85,7 @@ struct Loaded {
 
 fn loaded(script: &str) -> Loaded {
     let dir = tempfile::tempdir().unwrap();
-    std::fs::write(dir.path().join("project.toml"), "[project]\nname = \"t\"\n").unwrap();
+    std::fs::write(dir.path().join("project.eure"), "name = \"t\"\n").unwrap();
     std::fs::write(dir.path().join("probe.rn"), script).unwrap();
     let mut app = app_in(dir.path());
     let mut extension = unsafe { load_extension(&counter()) }.expect("the C extension should load");

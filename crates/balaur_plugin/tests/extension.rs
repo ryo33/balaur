@@ -70,7 +70,7 @@ struct Loaded {
 
 fn loaded(script: &str) -> Loaded {
     let dir = tempfile::tempdir().unwrap();
-    std::fs::write(dir.path().join("project.toml"), "[project]\nname = \"t\"\n").unwrap();
+    std::fs::write(dir.path().join("project.eure"), "name = \"t\"\n").unwrap();
     std::fs::write(dir.path().join("probe.rn"), script).unwrap();
     let mut app = app_in(dir.path());
     let mut extension = unsafe { load_extension(&greeter()) }.expect("the extension should load");
@@ -260,7 +260,7 @@ fn the_file_name_does_not_decide_the_plugin_name() {
 fn a_directory_missing_a_requirement_is_refused() {
     use balaur_plugin::{load_order, Manifest};
     let manifests = vec![Manifest::new("greeter", "0.1.0").requiring(&["absent_thing"])];
-    let err = load_order(&manifests).unwrap_err().to_string();
+    let err = load_order(&manifests, &[]).unwrap_err().to_string();
     assert!(err.contains("absent_thing"), "unhelpful: {err}");
 }
 
