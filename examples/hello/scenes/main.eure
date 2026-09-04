@@ -1,0 +1,186 @@
+@ nodes[] {
+  id: n_world
+  name: World
+  parent = ""
+}
+
+@ nodes[] {
+  id: n_ground
+  name: Ground
+  parent: n_world
+  position = [0, -1, 0]
+  body3d: static
+  color = [0.3, 0.55, 0.3]
+
+  collider3d {
+    half_extents = [10, 0.5, 10]
+    kind: cuboid
+  }
+
+  shape3d {
+    half_extents = [10, 0.5, 10]
+    kind: cuboid
+  }
+}
+
+@ nodes[] {
+  id: n_ball
+  name: Ball
+  parent: n_world
+  position = [0, 6, 0]
+  script: scripts/ball.rn
+
+  shape3d {
+    kind: ball
+    radius = 0.5
+    color = [0.9, 0.9, 0.9, 1]
+  }
+}
+
+@ nodes[] {
+  id: n_spinner
+  name: Spinner
+  parent: n_world
+  position = [2.5, 0.5, 0]
+  color = [0.2, 0.4, 0.9]
+
+  script {
+    source: scripts/spinner.rn
+    props {
+      speed = 3.5
+    }
+  }
+
+  shape3d {
+    half_extents = [0.5, 0.5, 0.5]
+    kind: cuboid
+  }
+}
+
+@ nodes[] {
+  id: n_platform
+  name: Platform
+  parent: n_world
+  position = [-2.5, 0.25, -2]
+  body3d: kinematic
+  script: scripts/platform.rn
+
+  animation {
+    autoplay: patrol
+    library: animations/platform.eure
+  }
+
+  collider3d {
+    half_extents = [1, 0.25, 1]
+    kind: cuboid
+  }
+
+  shape3d {
+    half_extents = [1, 0.25, 1]
+    kind: cuboid
+    color = [0.55, 0.35, 0.8, 1]
+  }
+}
+
+// Two instances of one prefab. The second overrides a node inside it, which
+// is the only thing that makes them differ.
+@ nodes[] {
+  id: n_crate_a
+  name: CrateA
+  parent: n_world
+  instance: scenes/crate.eure
+  position = [-1.5, 3, 1.5]
+}
+
+@ nodes[] {
+  id: n_crate_b
+  name: CrateB
+  parent: n_world
+  instance: scenes/crate.eure
+  position = [-0.5, 5, 1.5]
+
+  overrides = {
+    "Crate/Lid" => {
+      color => { rgba => [0.9, 0.3, 0.25, 1.0] }
+    }
+  }
+}
+
+@ nodes[] {
+  id: n_hud
+  name: Hud
+  parent = ""
+
+  widget {
+    anchor: top_left
+    text_color: #f9f4ed
+    kind: label
+    font_size = 16
+    text: hello · balaur
+    x = 16
+    y = 16
+  }
+}
+
+// A menu is nodes. The panel lays its children out in a column; each entry is
+// a button whose `on_click` names a method on the menu's own script, and none
+// of them says where it goes — the container decides that.
+@ nodes[] {
+  id: n_menu
+  name: Menu
+  parent = ""
+  script: scripts/menu.rn
+
+  widget {
+    kind: panel
+    anchor: bottom_left
+    x = 16
+    y = 16
+    text_key: menu.title
+    font_size = 13
+    padding = 6
+    gap = 6
+    text_color: #8d8478
+    // Named once on the menu's root; every button under it is drawn this way.
+    theme: themes/menu.eure
+  }
+}
+
+@ nodes[] {
+  id: n_menu_faster
+  name: Faster
+  parent: n_menu
+
+  widget {
+    kind: button
+    text_key: menu.faster
+    font_size = 13
+    on_click: on_faster
+  }
+}
+
+@ nodes[] {
+  id: n_menu_slower
+  name: Slower
+  parent: n_menu
+
+  widget {
+    kind: button
+    text_key: menu.slower
+    font_size = 13
+    on_click: on_slower
+  }
+}
+
+@ nodes[] {
+  id: n_menu_reverse
+  name: Reverse
+  parent: n_menu
+
+  widget {
+    kind: button
+    text_key: menu.reverse
+    font_size = 13
+    on_click: on_reverse
+  }
+}
