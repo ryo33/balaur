@@ -2,7 +2,7 @@
 // `animations/platform.eure#patrol`, which is what `autoplay = "patrol"` names.
 type: animation_clip
 
-@ clips.patrol {
+clips.patrol {
   length = 4.0
   loop = "pingpong" // none | loop | pingpong
 

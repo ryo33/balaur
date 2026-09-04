@@ -1,6 +1,6 @@
 type: animation_clip
 
-@ clips.sway {
+clips.sway {
   length = 2.0
   loop: loop
 

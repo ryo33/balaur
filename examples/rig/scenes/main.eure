@@ -31,49 +31,44 @@
   parent = ""
   position = [0, -1.25, 0]
 
-  @ animation {
-    autoplay: wave
-    speed = 1.0
+  animation.autoplay: wave
+  animation.speed = 1.0
 
-    @ library {
-      type: animation_clip
+  animation.library.type: animation_clip
+  animation.library.clips.wave {
+    length = 2.0
+    loop: loop
 
-      @ clips.wave {
-        length = 2.0
-        loop: loop
+    @ tracks[]
+    target: Hip/Thigh
+    property: rotation_euler
+    keys = [
+      { t => 0.0, value => [0, 0, -0.5] },
+      { t => 1.0, value => [0, 0, 0.5], ease => "in_out_sine" },
+      { t => 2.0, value => [0, 0, -0.5], ease => "in_out_sine" },
+    ]
 
-        @ tracks[]
-        target: Hip/Thigh
-        property: rotation_euler
-        keys = [
-          { t => 0.0, value => [0, 0, -0.5] },
-          { t => 1.0, value => [0, 0, 0.5], ease => "in_out_sine" },
-          { t => 2.0, value => [0, 0, -0.5], ease => "in_out_sine" },
-        ]
+    @ tracks[]
+    target: Hip/Thigh/Shin
+    property: rotation_euler
+    keys = [
+      { t => 0.0, value => [0, 0, 0.4] },
+      { t => 1.0, value => [0, 0, -0.6], ease => "in_out_sine" },
+      { t => 2.0, value => [0, 0, 0.4], ease => "in_out_sine" },
+    ]
 
-        @ tracks[]
-        target: Hip/Thigh/Shin
-        property: rotation_euler
-        keys = [
-          { t => 0.0, value => [0, 0, 0.4] },
-          { t => 1.0, value => [0, 0, -0.6], ease => "in_out_sine" },
-          { t => 2.0, value => [0, 0, 0.4], ease => "in_out_sine" },
-        ]
-
-        // The arm reaches for this point; `modifier2d` on Hero does the
-        // reaching.
-        @ tracks[]
-        target: Target
-        property: position
-        keys = [
-          { t => 0.0, value => [2.0, 1.4, 0] },
-          { t => 0.5, value => [1.7, 2.3, 0], ease => "in_out_sine" },
-          { t => 1.0, value => [1.0, 2.5, 0], ease => "in_out_sine" },
-          { t => 1.5, value => [1.4, 1.6, 0], ease => "in_out_sine" },
-          { t => 2.0, value => [2.0, 1.4, 0], ease => "in_out_sine" },
-        ]
-      }
-    }
+    // The arm reaches for this point; `modifier2d` on Hero does the
+    // reaching.
+    @ tracks[]
+    target: Target
+    property: position
+    keys = [
+      { t => 0.0, value => [2.0, 1.4, 0] },
+      { t => 0.5, value => [1.7, 2.3, 0], ease => "in_out_sine" },
+      { t => 1.0, value => [1.0, 2.5, 0], ease => "in_out_sine" },
+      { t => 1.5, value => [1.4, 1.6, 0], ease => "in_out_sine" },
+      { t => 2.0, value => [2.0, 1.4, 0], ease => "in_out_sine" },
+    ]
   }
 
   @ modifier2d
@@ -109,7 +104,7 @@ bone2d = { rest_position => [0, 0.85], rest_rotation => 0.0, length => 0.86, ang
   parent: n_hero
   position = [0, 0, 0]
 
-  @ polygon {
+  polygon {
     texture: art/limb.png
     skeleton: ..
     pixels_per_unit = 100.0
@@ -177,7 +172,7 @@ bone2d = { rest_position => [0.7, 0], rest_rotation => 0.0, length => 0.25 }
   parent: n_shin
   position = [0.4, 0.4, 0]
 
-  @ polygon {
+  polygon {
     texture: art/limb.png
     skeleton: ..
     pixels_per_unit = 100.0
