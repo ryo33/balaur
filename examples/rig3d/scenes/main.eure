@@ -58,12 +58,9 @@
   name: ColumnMesh
   parent: n_column
 
-  @ mesh {
-    skeleton: ../Root
-
-    @ source
-    source: models/column.glb
-  }
+  @ mesh
+  skeleton: ../Root
+  source.source: models/column.glb
 }
 
 @ nodes[] {

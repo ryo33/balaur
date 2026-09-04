@@ -40,12 +40,9 @@ parent = ""
   position = [2.5, 0.5, 0]
   color = [0.2, 0.4, 0.9]
 
-  @ script {
-    source: scripts/spinner.rn
-
-    @ props
-    speed = 3.5
-  }
+  @ script
+  source: scripts/spinner.rn
+  props.speed = 3.5
 
   @ shape3d
   half_extents = [0.5, 0.5, 0.5]
@@ -90,8 +87,7 @@ position = [-1.5, 3, 1.5]
   instance: scenes/crate.eure
   position = [-0.5, 5, 1.5]
 
-  @ overrides.'Crate/Lid'.color
-  rgba = [0.9, 0.3, 0.25, 1.0]
+  overrides.'Crate/Lid'.color.rgba = [0.9, 0.3, 0.25, 1.0]
 }
 
 @ nodes[] {
