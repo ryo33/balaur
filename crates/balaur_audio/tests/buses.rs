@@ -11,11 +11,11 @@ use balaur_core::{App, AppConfig};
 fn app(buses: &str) -> (tempfile::TempDir, App) {
     let dir = tempfile::tempdir().unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        format!("name = \"a\"\nmain_scene = \"main.toml\"\n{buses}"),
+        dir.path().join("project.eure"),
+        format!("name = \"a\"\nmain_scene = \"main.eure\"\n{buses}"),
     )
     .unwrap();
-    std::fs::write(dir.path().join("main.toml"), "").unwrap();
+    std::fs::write(dir.path().join("main.eure"), "").unwrap();
     let mut app = App::new(AppConfig {
         project_root: dir.path().to_path_buf(),
         pack: None,
@@ -30,10 +30,15 @@ fn app(buses: &str) -> (tempfile::TempDir, App) {
 }
 
 const NESTED: &str = "
-[audio.buses]
-sfx = { volume = 0.5 }
-ui = { volume = 0.5, parent = \"sfx\" }
-music = { volume = 0.25 }
+@ audio.buses.sfx
+volume = 0.5f32
+
+@ audio.buses.ui
+volume = 0.5f32
+parent: sfx
+
+@ audio.buses.music
+volume = 0.25f32
 ";
 
 fn gain(app: &App, bus: &str) -> f32 {
@@ -75,7 +80,7 @@ fn a_bus_nobody_declared_is_unity_rather_than_silence() {
 
 #[test]
 fn an_empty_bus_name_is_master() {
-    let (_dir, app) = app("\n[audio.buses]\nmaster = { volume = 0.5 }\n");
+    let (_dir, app) = app("\n@ audio.buses.master\nvolume = 0.5f32\n");
     assert!((gain(&app, "") - 0.5).abs() < 1e-6);
 }
 
@@ -120,9 +125,13 @@ fn setting_a_volume_makes_a_bus_that_was_not_declared() {
 #[test]
 fn a_cycle_is_cut_rather_than_looping_forever() {
     let (_dir, app) = app("
-[audio.buses]
-a = { volume = 0.5, parent = \"b\" }
-b = { volume = 0.5, parent = \"a\" }
+@ audio.buses.a
+volume = 0.5f32
+parent: b
+
+@ audio.buses.b
+volume = 0.5f32
+parent: a
 ");
     // The assertion is that this returns at all; the value is whatever the
     // chain came to before the cut.
@@ -173,11 +182,11 @@ fn stopping_everything_forgets_every_routing() {
 fn with_events(events: &str) -> (tempfile::TempDir, App) {
     let dir = tempfile::tempdir().unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        format!("name = \"a\"\nmain_scene = \"main.toml\"\n{NESTED}"),
+        dir.path().join("project.eure"),
+        format!("name = \"a\"\nmain_scene = \"main.eure\"\n{NESTED}"),
     )
     .unwrap();
-    std::fs::write(dir.path().join("main.toml"), "").unwrap();
+    std::fs::write(dir.path().join("main.eure"), "").unwrap();
     std::fs::create_dir_all(dir.path().join("audio")).unwrap();
     std::fs::write(dir.path().join("audio/events.toml"), events).unwrap();
     let mut app = App::new(AppConfig {
