@@ -1,0 +1,7 @@
+// The editor is a regular balaur project: one node, one script, the whole
+// shell drawn through the `ui` module.
+
+@ nodes[]
+id: n_editor
+name: Editor
+script: scripts/editor.rn
