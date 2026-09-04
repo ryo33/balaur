@@ -13,33 +13,45 @@ use balaur_physics::PhysicsPlugin;
 fn write_project(root: &std::path::Path) {
     std::fs::create_dir_all(root.join("scenes")).unwrap();
     std::fs::write(
-        root.join("project.toml"),
-        "name = \"det\"\nmain_scene = \"scenes/main.toml\"\n",
+        root.join("project.eure"),
+        "name = \"det\"\nmain_scene = \"scenes/main.eure\"\n",
     )
     .unwrap();
     std::fs::write(
-        root.join("scenes/main.toml"),
+        root.join("scenes/main.eure"),
         r#"
-[[nodes]]
-id = "n_ground"
-name = "Ground"
-position = [0.0, -1.0, 0.0]
-body3d = "static"
-collider3d = { kind = "cuboid", half_extents = [10.0, 0.5, 10.0] }
+@ nodes[] {
+  id: n_ground
+  name: Ground
+  position = [0.0, -1.0, 0.0]
+  body3d: static
 
-[[nodes]]
-id = "n_balla"
-name = "BallA"
-position = [0.1, 5.0, 0.0]
-body3d = "dynamic"
-collider3d = { kind = "ball", radius = 0.5 }
+  @ collider3d
+  kind: cuboid
+  half_extents = [10.0, 0.5, 10.0]
+}
 
-[[nodes]]
-id = "n_ballb"
-name = "BallB"
-position = [-0.1, 7.0, 0.05]
-body3d = "dynamic"
-collider3d = { kind = "ball", radius = 0.5 }
+@ nodes[] {
+  id: n_balla
+  name: BallA
+  position = [0.1, 5.0, 0.0]
+  body3d: dynamic
+
+  @ collider3d
+  kind: ball
+  radius = 0.5
+}
+
+@ nodes[] {
+  id: n_ballb
+  name: BallB
+  position = [-0.1, 7.0, 0.05]
+  body3d: dynamic
+
+  @ collider3d
+  kind: ball
+  radius = 0.5
+}
 "#,
     )
     .unwrap();
@@ -108,34 +120,47 @@ fn simulation_is_bitwise_reproducible() {
 fn write_project_2d(root: &std::path::Path) {
     std::fs::create_dir_all(root.join("scenes")).unwrap();
     std::fs::write(
-        root.join("project.toml"),
-        "name = \"det2d\"\nmain_scene = \"scenes/main.toml\"\n",
+        root.join("project.eure"),
+        "name = \"det2d\"\nmain_scene = \"scenes/main.eure\"\n",
     )
     .unwrap();
     std::fs::write(
-        root.join("scenes/main.toml"),
+        root.join("scenes/main.eure"),
         r#"
-[[nodes]]
-id = "n_ground"
-name = "Ground"
-position = [0.0, -1.0, 0.0]
-body2d = "static"
-collider2d = { kind = "rect", half_extents = [10, 1] }
+@ nodes[] {
+  id: n_ground
+  name: Ground
+  position = [0.0, -1.0, 0.0]
+  body2d: static
 
-[[nodes]]
-id = "n_balla"
-name = "BallA"
-position = [0.1, 5.0, 0.0]
-body2d = "dynamic"
-collider2d = { kind = "circle", radius = 0.5, restitution = 0.4 }
+  @ collider2d
+  kind: rect
+  half_extents = [10, 1]
+}
 
-[[nodes]]
-id = "n_boxb"
-name = "BoxB"
-position = [-0.1, 7.0, 0.0]
-rotation_euler = [0.0, 0.0, 0.4]
-body2d = "dynamic"
-collider2d = { kind = "rect", half_extents = [0.5, 0.3] }
+@ nodes[] {
+  id: n_balla
+  name: BallA
+  position = [0.1, 5.0, 0.0]
+  body2d: dynamic
+
+  @ collider2d
+  kind: circle
+  radius = 0.5
+  restitution = 0.4
+}
+
+@ nodes[] {
+  id: n_boxb
+  name: BoxB
+  position = [-0.1, 7.0, 0.0]
+  rotation_euler = [0.0, 0.0, 0.4]
+  body2d: dynamic
+
+  @ collider2d
+  kind: rect
+  half_extents = [0.5, 0.3]
+}
 "#,
     )
     .unwrap();
