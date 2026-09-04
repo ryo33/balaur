@@ -57,22 +57,24 @@ size = { type = "float", default = 1.0 }"#,
 }
 
 const ENEMY: &str = r#"
-[[nodes]]
-id = "n_body"
-name = "Body"
+@ nodes[] {
+  id: n_body
+  name: Body
 
-[nodes.marker]
-label = "body"
+  @ marker
+  label: body
+}
 
-[[nodes]]
-id = "n_arm"
-name = "Arm"
-parent = "n_body"
-position = [1.0, 0.0, 0.0]
+@ nodes[] {
+  id: n_arm
+  name: Arm
+  parent: n_body
+  position = [1.0, 0.0, 0.0]
 
-[nodes.marker]
-label = "arm"
-size = 3.0
+  @ marker
+  label: arm
+  size = 3.0
+}
 "#;
 
 fn label(app: &App, path: &str) -> Option<String> {
@@ -90,7 +92,7 @@ fn stable_id(app: &App, path: &str) -> Option<String> {
 }
 
 fn load(scene: &str) -> (tempfile::TempDir, App) {
-    let dir = project(&[("scenes/enemy.toml", ENEMY)]);
+    let dir = project(&[("scenes/enemy.eure", ENEMY)]);
     let app = app_in(dir.path());
     let root = app.engine.root();
     balaur_core::project::instantiate_scene(&app.engine, scene, root, false).unwrap();
@@ -101,10 +103,10 @@ fn load(scene: &str) -> (tempfile::TempDir, App) {
 fn an_instance_builds_the_prefab_under_the_node_that_names_it() {
     let (_dir, app) = load(
         r#"
-[[nodes]]
-id = "n_enemy"
-name = "Enemy"
-instance = "scenes/enemy.toml"
+@ nodes[]
+id: n_enemy
+name: Enemy
+instance: scenes/enemy.eure
 position = [4.0, 0.0, 0.0]
 "#,
     );
@@ -116,18 +118,18 @@ position = [4.0, 0.0, 0.0]
 fn two_instances_of_one_prefab_differ_only_where_overridden() {
     let (_dir, app) = load(
         r#"
-[[nodes]]
-id = "n_left"
-name = "Left"
-instance = "scenes/enemy.toml"
+@ nodes[] {
+  id: n_left
+  name: Left
+  instance: scenes/enemy.eure
 
-[nodes.overrides."Body/Arm".marker]
-label = "left arm"
+  overrides.'Body/Arm'.marker.label = "left arm"
+}
 
-[[nodes]]
-id = "n_right"
-name = "Right"
-instance = "scenes/enemy.toml"
+@ nodes[]
+id: n_right
+name: Right
+instance: scenes/enemy.eure
 "#,
     );
     assert_eq!(label(&app, "Left/Body/Arm"), Some(String::from("left arm")));
@@ -141,15 +143,15 @@ instance = "scenes/enemy.toml"
 fn ids_inside_an_instance_are_prefixed_by_the_instance() {
     let (_dir, app) = load(
         r#"
-[[nodes]]
-id = "n_left"
-name = "Left"
-instance = "scenes/enemy.toml"
+@ nodes[]
+id: n_left
+name: Left
+instance: scenes/enemy.eure
 
-[[nodes]]
-id = "n_right"
-name = "Right"
-instance = "scenes/enemy.toml"
+@ nodes[]
+id: n_right
+name: Right
+instance: scenes/enemy.eure
 "#,
     );
     assert_eq!(stable_id(&app, "Left"), Some(String::from("n_left")));
@@ -168,13 +170,13 @@ instance = "scenes/enemy.toml"
 fn an_override_reaches_the_transform_too() {
     let (_dir, app) = load(
         r#"
-[[nodes]]
-id = "n_enemy"
-name = "Enemy"
-instance = "scenes/enemy.toml"
+@ nodes[] {
+  id: n_enemy
+  name: Enemy
+  instance: scenes/enemy.eure
 
-[nodes.overrides."Body/Arm"]
-position = [0.0, 2.0, 0.0]
+  overrides.'Body/Arm'.position = [0.0, 2.0, 0.0]
+}
 "#,
     );
     let world = app.engine.world();
@@ -190,13 +192,13 @@ position = [0.0, 2.0, 0.0]
 fn an_override_naming_nothing_is_not_fatal() {
     let (_dir, app) = load(
         r#"
-[[nodes]]
-id = "n_enemy"
-name = "Enemy"
-instance = "scenes/enemy.toml"
+@ nodes[] {
+  id: n_enemy
+  name: Enemy
+  instance: scenes/enemy.eure
 
-[nodes.overrides."Body/Leg".marker]
-label = "gone"
+  overrides.'Body/Leg'.marker.label = "gone"
+}
 "#,
     );
     assert_eq!(label(&app, "Enemy/Body"), Some(String::from("body")));
@@ -205,12 +207,12 @@ label = "gone"
 #[test]
 fn a_prefab_that_contains_itself_is_an_error_not_a_hang() {
     let dir = project(&[(
-        "scenes/loop.toml",
+        "scenes/loop.eure",
         r#"
-[[nodes]]
-id = "n_self"
-name = "Self"
-instance = "scenes/loop.toml"
+@ nodes[]
+id: n_self
+name: Self
+instance: scenes/loop.eure
 "#,
     )]);
     let app = app_in(dir.path());
@@ -218,10 +220,10 @@ instance = "scenes/loop.toml"
     let err = balaur_core::project::instantiate_scene(
         &app.engine,
         r#"
-[[nodes]]
-id = "n_outer"
-name = "Outer"
-instance = "scenes/loop.toml"
+@ nodes[]
+id: n_outer
+name: Outer
+instance: scenes/loop.eure
 "#,
         root,
         false,
@@ -236,14 +238,14 @@ instance = "scenes/loop.toml"
 #[test]
 fn a_prefab_inside_a_prefab_prefixes_twice() {
     let dir = project(&[
-        ("scenes/enemy.toml", ENEMY),
+        ("scenes/enemy.eure", ENEMY),
         (
-            "scenes/squad.toml",
+            "scenes/squad.eure",
             r#"
-[[nodes]]
-id = "n_leader"
-name = "Leader"
-instance = "scenes/enemy.toml"
+@ nodes[]
+id: n_leader
+name: Leader
+instance: scenes/enemy.eure
 "#,
         ),
     ]);
@@ -252,10 +254,10 @@ instance = "scenes/enemy.toml"
     balaur_core::project::instantiate_scene(
         &app.engine,
         r#"
-[[nodes]]
-id = "n_squad"
-name = "Squad"
-instance = "scenes/squad.toml"
+@ nodes[]
+id: n_squad
+name: Squad
+instance: scenes/squad.eure
 "#,
         root,
         false,
@@ -271,10 +273,10 @@ instance = "scenes/squad.toml"
 fn the_instance_node_keeps_its_own_name_and_children() {
     let (_dir, app) = load(
         r#"
-[[nodes]]
-id = "n_enemy"
-name = "Enemy"
-instance = "scenes/enemy.toml"
+@ nodes[]
+id: n_enemy
+name: Enemy
+instance: scenes/enemy.eure
 "#,
     );
     let world = app.engine.world();
@@ -292,12 +294,12 @@ instance = "scenes/enemy.toml"
 /// `props` suite runs the script half.
 #[test]
 fn a_script_key_with_no_source_is_refused_on_a_node_of_its_own() {
-    let dir = project(&[("scenes/enemy.toml", ENEMY)]);
+    let dir = project(&[("scenes/enemy.eure", ENEMY)]);
     let app = app_in(dir.path());
     let root = app.engine.root();
     let err = balaur_core::project::instantiate_scene(
         &app.engine,
-        "[[nodes]]\nname = \"Enemy\"\nscript = { props = { speed = 1.0 } }\n",
+        "@ nodes[]\nname: Enemy\nscript = { props => { speed => 1.0 } }\n",
         root,
         false,
     )
@@ -319,13 +321,13 @@ fn size(app: &App, path: &str) -> Option<f64> {
 fn an_override_of_one_property_leaves_the_others_alone() {
     let (_dir, app) = load(
         r#"
-[[nodes]]
-id = "n_enemy"
-name = "Enemy"
-instance = "scenes/enemy.toml"
+@ nodes[] {
+  id: n_enemy
+  name: Enemy
+  instance: scenes/enemy.eure
 
-[nodes.overrides."Body/Arm".marker]
-label = "left arm"
+  overrides.'Body/Arm'.marker.label = "left arm"
+}
 "#,
     );
     assert_eq!(

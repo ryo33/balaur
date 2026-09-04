@@ -8,23 +8,23 @@ use balaur_script::Value;
 const EN: &str = r#"
 "menu.play" = "Play"
 "menu.greet" = "Hello, {name}"
-"menu.items" = { one = "{n} item", other = "{n} items" }
+"menu.items" = { one => "{n} item", other => "{n} items" }
 "only.english" = "English only"
 "#;
 
 const RO: &str = r#"
 "menu.play" = "Joacă"
-"menu.items" = { one = "{n} obiect", few = "{n} obiecte", other = "{n} de obiecte" }
+"menu.items" = { one => "{n} obiect", few => "{n} obiecte", other => "{n} de obiecte" }
 "#;
 
 fn project(manifest_locale: &str, files: &[(&str, &str)]) -> tempfile::TempDir {
     let dir = tempfile::tempdir().unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        format!("name = \"t\"\nmain_scene = \"main.toml\"\n{manifest_locale}"),
+        dir.path().join("project.eure"),
+        format!("name = \"t\"\nmain_scene = \"main.eure\"\n{manifest_locale}"),
     )
     .unwrap();
-    std::fs::write(dir.path().join("main.toml"), "").unwrap();
+    std::fs::write(dir.path().join("main.eure"), "").unwrap();
     std::fs::create_dir_all(dir.path().join("strings")).unwrap();
     for (name, body) in files {
         std::fs::write(dir.path().join("strings").join(name), body).unwrap();
@@ -52,8 +52,8 @@ fn n(count: i64) -> Vec<(String, Value)> {
 #[test]
 fn a_key_answers_in_the_locale_in_force() {
     let dir = project(
-        "\n[locale]\ndefault = \"ro\"\nfallback = \"en\"\n",
-        &[("en.toml", EN), ("ro.toml", RO)],
+        "\n@ locale\ndefault = \"ro\"\nfallback = \"en\"\n",
+        &[("en.eure", EN), ("ro.eure", RO)],
     );
     let app = app_in(dir.path());
     assert_eq!(strings::locale(&app.engine), "ro");
@@ -66,8 +66,8 @@ fn a_key_answers_in_the_locale_in_force() {
 #[test]
 fn a_key_the_locale_lacks_falls_back() {
     let dir = project(
-        "\n[locale]\ndefault = \"ro\"\nfallback = \"en\"\n",
-        &[("en.toml", EN), ("ro.toml", RO)],
+        "\n@ locale\ndefault = \"ro\"\nfallback = \"en\"\n",
+        &[("en.eure", EN), ("ro.eure", RO)],
     );
     let app = app_in(dir.path());
     assert_eq!(
@@ -80,7 +80,7 @@ fn a_key_the_locale_lacks_falls_back() {
 /// notice, and an empty label is a bug to miss.
 #[test]
 fn a_key_nothing_has_comes_back_as_itself() {
-    let dir = project("", &[("en.toml", EN)]);
+    let dir = project("", &[("en.eure", EN)]);
     let app = app_in(dir.path());
     assert_eq!(
         strings::tr(&app.engine, "nobody.wrote.this", &[]),
@@ -90,7 +90,7 @@ fn a_key_nothing_has_comes_back_as_itself() {
 
 #[test]
 fn an_argument_is_interpolated_by_name() {
-    let dir = project("", &[("en.toml", EN)]);
+    let dir = project("", &[("en.eure", EN)]);
     let app = app_in(dir.path());
     let args = vec![("name".to_string(), Value::Str("Vasilisa".into()))];
     assert_eq!(
@@ -103,7 +103,7 @@ fn an_argument_is_interpolated_by_name() {
 /// visible to whoever has to fill it.
 #[test]
 fn a_placeholder_with_no_argument_is_left_alone() {
-    let dir = project("", &[("en.toml", EN)]);
+    let dir = project("", &[("en.eure", EN)]);
     let app = app_in(dir.path());
     let args = vec![("other".to_string(), Value::Int(1))];
     assert_eq!(
@@ -114,7 +114,7 @@ fn a_placeholder_with_no_argument_is_left_alone() {
 
 #[test]
 fn english_counts_one_and_the_rest() {
-    let dir = project("", &[("en.toml", EN)]);
+    let dir = project("", &[("en.eure", EN)]);
     let app = app_in(dir.path());
     assert_eq!(strings::tr(&app.engine, "menu.items", &n(1)), "1 item");
     assert_eq!(strings::tr(&app.engine, "menu.items", &n(0)), "0 items");
@@ -126,8 +126,8 @@ fn english_counts_one_and_the_rest() {
 #[test]
 fn romanian_counts_one_few_and_the_rest() {
     let dir = project(
-        "\n[locale]\ndefault = \"ro\"\n",
-        &[("en.toml", EN), ("ro.toml", RO)],
+        "\n@ locale\ndefault = \"ro\"\n",
+        &[("en.eure", EN), ("ro.eure", RO)],
     );
     let app = app_in(dir.path());
     assert_eq!(strings::tr(&app.engine, "menu.items", &n(1)), "1 obiect");
@@ -149,8 +149,8 @@ fn romanian_counts_one_few_and_the_rest() {
 #[test]
 fn a_missing_plural_form_falls_to_other() {
     let dir = project(
-        "\n[locale]\ndefault = \"ro\"\n",
-        &[("ro.toml", "\"x\" = { one = \"unu\", other = \"multe\" }\n")],
+        "\n@ locale\ndefault = \"ro\"\n",
+        &[("ro.eure", "\"x\" = { one => \"unu\", other => \"multe\" }\n")],
     );
     let app = app_in(dir.path());
     assert_eq!(strings::tr(&app.engine, "x", &n(1)), "unu");
@@ -165,7 +165,7 @@ fn a_missing_plural_form_falls_to_other() {
 /// is empty rather than fatal.
 #[test]
 fn a_locale_with_no_file_is_empty_not_an_error() {
-    let dir = project("\n[locale]\ndefault = \"de\"\n", &[("en.toml", EN)]);
+    let dir = project("\n@ locale\ndefault = \"de\"\n", &[("en.eure", EN)]);
     let app = app_in(dir.path());
     assert_eq!(
         strings::tr(&app.engine, "menu.play", &[]),
@@ -177,7 +177,7 @@ fn a_locale_with_no_file_is_empty_not_an_error() {
 
 #[test]
 fn locales_lists_the_files_the_project_ships() {
-    let dir = project("", &[("en.toml", EN), ("ro.toml", RO)]);
+    let dir = project("", &[("en.eure", EN), ("ro.eure", RO)]);
     let app = app_in(dir.path());
     assert_eq!(strings::locales(&app.engine), vec!["en", "ro"]);
 }
@@ -185,7 +185,7 @@ fn locales_lists_the_files_the_project_ships() {
 /// `en-GB` is English for the purpose of counting.
 #[test]
 fn a_region_does_not_change_the_language_that_counts() {
-    let dir = project("\n[locale]\ndefault = \"en-GB\"\n", &[("en-GB.toml", EN)]);
+    let dir = project("\n@ locale\ndefault = \"en-GB\"\n", &[("en-GB.eure", EN)]);
     let app = app_in(dir.path());
     assert_eq!(strings::tr(&app.engine, "menu.items", &n(1)), "1 item");
     assert_eq!(strings::tr(&app.engine, "menu.items", &n(2)), "2 items");

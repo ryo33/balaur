@@ -93,7 +93,7 @@ pub fn directory(eng: &Engine, type_name: &str) -> String {
 }
 
 /// One `[[assets]]` block in a scene document: Godot's `[sub_resource]`.
-#[derive(FromEure, Clone)]
+#[derive(FromEure, Clone, PartialEq)]
 #[eure(crate = ::eure::document)]
 pub struct SceneAsset {
     /// What `#id` refers to, scoped to the scene declaring it.
@@ -385,8 +385,7 @@ pub fn save(eng: &Engine, reference: &str, definition: &toml::Value) -> Result<(
         std::fs::create_dir_all(parent)
             .with_context(|| format!("creating {}", parent.display()))?;
     }
-    let text =
-        toml::to_string_pretty(definition).with_context(|| format!("encoding '{reference}'"))?;
+    let text = crate::node_api::toml_to_eure_text(definition);
     std::fs::write(&full, text).with_context(|| format!("writing {}", full.display()))?;
     reload(eng, reference)
 }

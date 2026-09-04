@@ -10,7 +10,6 @@ use std::path::Path;
 use std::rc::Rc;
 
 use anyhow::{bail, Result};
-use eure::document::parse::ParseContext;
 use eure::query::{ParseEure, TextFile, TextFileContent, WithFormattedError};
 use eure::query_flow::DurabilityLevel;
 use eure::report::IntoErrorReports;
@@ -42,9 +41,16 @@ impl EureRuntime {
     /// is always used as given rather than re-read from disk, so a caller
     /// serving a packed or in-memory file works exactly like one reading the
     /// project directory.
+    ///
+    /// `T` must be real `PartialEq`, not a stand-in that always reports
+    /// equal: query-flow backdates a query's result to the previously cached
+    /// value whenever a recompute compares equal to it, at the query's own
+    /// level and not only for downstream queries, so an always-equal wrapper
+    /// would make every reparse after the first return the first file's
+    /// content forever.
     pub fn parse<T>(&self, path: &Path, content: &str) -> Result<T>
     where
-        T: for<'doc> FromEure<'doc> + Clone + Send + Sync + 'static,
+        T: for<'doc> FromEure<'doc> + Clone + PartialEq + Send + Sync + 'static,
         for<'doc> <T as FromEure<'doc>>::Error: IntoErrorReports,
     {
         let file = TextFile::from_path(path.to_path_buf());
@@ -55,13 +61,10 @@ impl EureRuntime {
         );
         let result = self
             .runtime
-            .query(WithFormattedError::new(
-                ParseEure::<AlwaysEq<T>>::new(file),
-                false,
-            ))
+            .query(WithFormattedError::new(ParseEure::<T>::new(file), false))
             .map_err(|err| anyhow::anyhow!("{err}"))?;
         match &*result {
-            Ok(value) => Ok((**value).clone().0),
+            Ok(value) => Ok((**value).clone()),
             Err(message) => bail!("{message}"),
         }
     }
@@ -84,26 +87,4 @@ pub fn of(eng: &crate::engine::Engine) -> Rc<RefCell<EureRuntime>> {
     }
     eng.insert_resource(EureRuntime::new());
     eng.resource::<EureRuntime>()
-}
-
-/// Wraps a `FromEure` output so it can be a query result without requiring
-/// `PartialEq` on the wrapped type: query-flow only uses the comparison to
-/// decide whether *downstream* queries can skip recomputing, and we have no
-/// downstream queries here, only the cached parse itself (which is keyed on
-/// the input content, not on this comparison).
-#[derive(Clone)]
-struct AlwaysEq<T>(T);
-
-impl<T> PartialEq for AlwaysEq<T> {
-    fn eq(&self, _other: &Self) -> bool {
-        true
-    }
-}
-
-impl<'doc, T: FromEure<'doc>> FromEure<'doc> for AlwaysEq<T> {
-    type Error = T::Error;
-
-    fn parse(ctx: &ParseContext<'doc>) -> Result<Self, Self::Error> {
-        T::parse(ctx).map(AlwaysEq)
-    }
 }

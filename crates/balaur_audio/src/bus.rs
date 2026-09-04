@@ -127,7 +127,7 @@ pub fn ensure_loaded(eng: &Engine) {
 /// The `@ audio.buses` section, or nothing.
 fn declared(eng: &Engine) -> BTreeMap<String, Bus> {
     #[derive(eure::FromEure)]
-    #[eure(crate = ::eure::document)]
+    #[eure(crate = ::eure::document, allow_unknown_fields)]
     struct Declared {
         #[eure(default = "one")]
         volume: f32,
@@ -138,13 +138,13 @@ fn declared(eng: &Engine) -> BTreeMap<String, Bus> {
         1.0
     }
     #[derive(eure::FromEure, Default)]
-    #[eure(crate = ::eure::document)]
+    #[eure(crate = ::eure::document, allow_unknown_fields)]
     struct Audio {
         #[eure(default)]
         buses: BTreeMap<String, Declared>,
     }
     #[derive(eure::FromEure)]
-    #[eure(crate = ::eure::document)]
+    #[eure(crate = ::eure::document, allow_unknown_fields)]
     struct Manifest {
         #[eure(default)]
         audio: Audio,

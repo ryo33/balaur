@@ -360,13 +360,13 @@ pub(crate) fn add_replay_setup(app: &mut balaur_core::App) {
 /// should get a neutral answer rather than a crash.
 fn load(eng: &Engine) -> BTreeMap<String, Vec<Binding>> {
     #[derive(eure::FromEure, Default)]
-    #[eure(crate = ::eure::document)]
+    #[eure(crate = ::eure::document, allow_unknown_fields)]
     struct InputTable {
         #[eure(default)]
         actions: BTreeMap<String, Vec<String>>,
     }
     #[derive(eure::FromEure)]
-    #[eure(crate = ::eure::document)]
+    #[eure(crate = ::eure::document, allow_unknown_fields)]
     struct Manifest {
         #[eure(default)]
         input: InputTable,

@@ -33,13 +33,13 @@ impl ScriptCompiler for Failing {
 fn project() -> tempfile::TempDir {
     let dir = tempfile::tempdir().unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"p\"\nmain_scene = \"m.toml\"\n",
+        dir.path().join("project.eure"),
+        "name = \"p\"\nmain_scene = \"m.eure\"\n",
     )
     .unwrap();
     std::fs::write(
-        dir.path().join("m.toml"),
-        "[[nodes]]\nid = \"n\"\nname = \"Root\"\n",
+        dir.path().join("m.eure"),
+        "@ nodes[]\nid: n\nname: Root\n",
     )
     .unwrap();
     std::fs::write(dir.path().join("s.txt"), "abc").unwrap();
@@ -196,8 +196,8 @@ fn unclaimed_extensions_are_left_alone() {
 fn scenes_are_gathered_but_the_manifest_is_not_one_of_them() {
     let dir = project();
     let pack = Pack::build(dir.path(), &Reversing).unwrap();
-    assert!(pack.scenes.contains_key("m.toml"));
-    assert!(!pack.scenes.contains_key("project.toml"));
+    assert!(pack.scenes.contains_key("m.eure"));
+    assert!(!pack.scenes.contains_key("project.eure"));
     assert!(pack.manifest.contains("name = \"p\""));
 }
 

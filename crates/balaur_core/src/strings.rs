@@ -51,7 +51,7 @@ impl LocaleConfig {
     #[must_use]
     pub fn load(eng: &Engine) -> Self {
         #[derive(FromEure)]
-        #[eure(crate = ::eure::document)]
+        #[eure(crate = ::eure::document, allow_unknown_fields)]
         struct Manifest {
             #[eure(default)]
             locale: LocaleConfig,

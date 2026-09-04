@@ -281,23 +281,23 @@ fn bone2d_applies_from_a_scene_and_reads_back_what_was_written() {
     let dir = tempfile::tempdir().unwrap();
     std::fs::create_dir_all(dir.path().join("scenes")).unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"t\"\nmain_scene = \"scenes/main.toml\"\n",
+        dir.path().join("project.eure"),
+        "name = \"t\"\nmain_scene = \"scenes/main.eure\"\n",
     )
     .unwrap();
     std::fs::write(
-        dir.path().join("scenes/main.toml"),
+        dir.path().join("scenes/main.eure"),
         r#"
-[[nodes]]
-id = "n_rig"
-name = "Rig"
+@ nodes[]
+id: n_rig
+name: Rig
 
-[[nodes]]
-id = "n_hip"
-name = "Hip"
-parent = "n_rig"
-position = [0, 1, 0]
-bone2d = { rest_position = [0, 1], rest_rotation = 0.25, length = 0.5 }
+@ nodes[]
+id: n_hip
+name: Hip
+parent: n_rig
+position = [0.0, 1.0, 0.0]
+bone2d = { rest_position => [0.0, 1.0], rest_rotation => 0.25, length => 0.5 }
 "#,
     )
     .unwrap();

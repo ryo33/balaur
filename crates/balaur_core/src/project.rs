@@ -29,7 +29,7 @@ use crate::engine::Engine;
 use crate::scene::{self, Transform};
 
 #[derive(FromEure, Clone)]
-#[eure(crate = ::eure::document)]
+#[eure(crate = ::eure::document, allow_unknown_fields)]
 pub struct ProjectManifest {
     pub name: String,
     pub main_scene: String,
@@ -60,8 +60,8 @@ impl ProjectManifest {
     }
 }
 
-#[derive(FromEure, Clone)]
-#[eure(crate = ::eure::document)]
+#[derive(FromEure, Clone, PartialEq)]
+#[eure(crate = ::eure::document, allow_unknown_fields)]
 struct SceneDoc {
     /// Assets this scene owns, addressable as `#id` from any node in it —
     /// Godot's `[sub_resource]`. See `crate::assets`.
@@ -71,7 +71,7 @@ struct SceneDoc {
     nodes: Vec<SceneNode>,
 }
 
-#[derive(FromEure, Clone)]
+#[derive(FromEure, Clone, PartialEq)]
 #[eure(crate = ::eure::document)]
 struct SceneNode {
     /// Stable identity, assigned once and never reused.
@@ -85,12 +85,19 @@ struct SceneNode {
     /// The parent's `id`. Omitted or empty means a root child.
     #[eure(default)]
     parent: String,
+    // `Option<[f32; 3]>` directly hits a limitation in eure 0.1.9's untagged
+    // `Option<T>` matching for array-shaped `T` (it never falls through to
+    // trying `T`), and even a bare `[f64; 3]` field requires every literal to
+    // already be a float — `position = [0, -1, 0]`, valid and common, would
+    // fail with "expected f64, got integer". `EureValue::as_float` already
+    // handles the int-or-float case, so these stay dynamic and go through
+    // `triple` below instead of the derive.
     #[eure(default)]
-    position: Option<[f32; 3]>,
+    position: Option<EureValue>,
     #[eure(default)]
-    rotation_euler: Option<[f32; 3]>,
+    rotation_euler: Option<EureValue>,
     #[eure(default)]
-    scale: Option<[f32; 3]>,
+    scale: Option<EureValue>,
     #[eure(default)]
     script: Option<ScriptRef>,
     /// A prefab: another scene file, built as this node's children.
@@ -114,7 +121,7 @@ struct SceneNode {
 ///
 /// `props` holds only what differs from the script's exported defaults, so a
 /// changed default reaches every node that did not override it.
-#[derive(FromEure, Clone)]
+#[derive(FromEure, Clone, PartialEq)]
 #[eure(crate = ::eure::document)]
 enum ScriptRef {
     Source(String),
@@ -445,13 +452,13 @@ fn instantiate_nodes(eng: &Engine, doc: &SceneDoc, base: Entity, build: &mut Bui
             let world = eng.world();
             // spawn_node inserts a Transform on every node it creates.
             let mut transform = world.get::<&mut Transform>(entity).unwrap();
-            if let Some([x, y, z]) = node.position {
+            if let Some([x, y, z]) = triple(node.position.clone()) {
                 transform.position = Vec3::new(x, y, z);
             }
-            if let Some([roll, pitch, yaw]) = node.rotation_euler {
+            if let Some([roll, pitch, yaw]) = triple(node.rotation_euler.clone()) {
                 transform.rotation = Quat::from_euler(EulerRot::ZYX, yaw, pitch, roll);
             }
-            if let Some([x, y, z]) = node.scale {
+            if let Some([x, y, z]) = triple(node.scale.clone()) {
                 transform.scale = Vec3::new(x, y, z);
             }
         }
