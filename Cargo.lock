@@ -371,6 +371,7 @@ dependencies = [
  "balaur_ui",
  "balaur_websocket",
  "balaur_webtransport",
+ "eure",
  "serde_json",
  "tempfile",
  "toml",

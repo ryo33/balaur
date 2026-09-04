@@ -56,6 +56,7 @@ balaur_ui.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
 toml.workspace = true
+eure.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true
