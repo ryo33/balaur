@@ -44,13 +44,13 @@ fn project(with_extension: bool) -> tempfile::TempDir {
     let dir = tempfile::tempdir().unwrap();
     std::fs::create_dir_all(dir.path().join("scripts")).unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"extended\"\nmain_scene = \"main.toml\"\n",
+        dir.path().join("project.eure"),
+        "name = \"extended\"\nmain_scene = \"main.eure\"\n",
     )
     .unwrap();
     std::fs::write(
-        dir.path().join("main.toml"),
-        "[[nodes]]\nid = \"n\"\nname = \"Root\"\nscript = \"scripts/s.rn\"\n",
+        dir.path().join("main.eure"),
+        "@ nodes[] {\n  id: n\n  name: Root\n  script: scripts/s.rn\n}\n",
     )
     .unwrap();
     std::fs::write(

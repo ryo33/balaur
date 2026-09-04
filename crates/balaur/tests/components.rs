@@ -91,11 +91,11 @@ fn app_with_every_component() -> (tempfile::TempDir, balaur::App) {
     let dir = tempfile::tempdir().unwrap();
     std::fs::create_dir_all(dir.path().join("scenes")).unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"t\"\nmain_scene = \"scenes/main.toml\"\n",
+        dir.path().join("project.eure"),
+        "name = \"t\"\nmain_scene = \"scenes/main.eure\"\n",
     )
     .unwrap();
-    std::fs::write(dir.path().join("scenes/main.toml"), "").unwrap();
+    std::fs::write(dir.path().join("scenes/main.eure"), "").unwrap();
     let mut config = AppConfig::dev(dir.path().to_string_lossy().as_ref());
     config.watch = false;
     let app = standard_app(config).unwrap();

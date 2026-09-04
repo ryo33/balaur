@@ -137,11 +137,11 @@ fn the_script_api_exposes_tags_presets_and_warnings() {
     std::fs::create_dir_all(dir.path().join("scenes")).unwrap();
     std::fs::create_dir_all(dir.path().join("scripts")).unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"t\"\nmain_scene = \"scenes/main.toml\"\n",
+        dir.path().join("project.eure"),
+        "name = \"t\"\nmain_scene = \"scenes/main.eure\"\n",
     )
     .unwrap();
-    std::fs::write(dir.path().join("scenes/main.toml"), "").unwrap();
+    std::fs::write(dir.path().join("scenes/main.eure"), "").unwrap();
     std::fs::write(
         dir.path().join("scripts/t.rn"),
         r#"
