@@ -38,43 +38,41 @@
     @ library {
       type: animation_clip
 
-      @ clips.wave
-      length = 2.0
-      loop: loop
+      @ clips.wave {
+        length = 2.0
+        loop: loop
 
-      tracks = [
-        {
-          target => "Hip/Thigh",
-          property => "rotation_euler",
-          keys => [
-            { t => 0.0, value => [0, 0, -0.5] },
-            { t => 1.0, value => [0, 0, 0.5], ease => "in_out_sine" },
-            { t => 2.0, value => [0, 0, -0.5], ease => "in_out_sine" },
-          ]
-        },
-        {
-          target => "Hip/Thigh/Shin",
-          property => "rotation_euler",
-          keys => [
-            { t => 0.0, value => [0, 0, 0.4] },
-            { t => 1.0, value => [0, 0, -0.6], ease => "in_out_sine" },
-            { t => 2.0, value => [0, 0, 0.4], ease => "in_out_sine" },
-          ]
-        },
+        @ tracks[]
+        target: Hip/Thigh
+        property: rotation_euler
+        keys = [
+          { t => 0.0, value => [0, 0, -0.5] },
+          { t => 1.0, value => [0, 0, 0.5], ease => "in_out_sine" },
+          { t => 2.0, value => [0, 0, -0.5], ease => "in_out_sine" },
+        ]
+
+        @ tracks[]
+        target: Hip/Thigh/Shin
+        property: rotation_euler
+        keys = [
+          { t => 0.0, value => [0, 0, 0.4] },
+          { t => 1.0, value => [0, 0, -0.6], ease => "in_out_sine" },
+          { t => 2.0, value => [0, 0, 0.4], ease => "in_out_sine" },
+        ]
+
         // The arm reaches for this point; `modifier2d` on Hero does the
         // reaching.
-        {
-          target => "Target",
-          property => "position",
-          keys => [
-            { t => 0.0, value => [2.0, 1.4, 0] },
-            { t => 0.5, value => [1.7, 2.3, 0], ease => "in_out_sine" },
-            { t => 1.0, value => [1.0, 2.5, 0], ease => "in_out_sine" },
-            { t => 1.5, value => [1.4, 1.6, 0], ease => "in_out_sine" },
-            { t => 2.0, value => [2.0, 1.4, 0], ease => "in_out_sine" },
-          ]
-        }
-      ]
+        @ tracks[]
+        target: Target
+        property: position
+        keys = [
+          { t => 0.0, value => [2.0, 1.4, 0] },
+          { t => 0.5, value => [1.7, 2.3, 0], ease => "in_out_sine" },
+          { t => 1.0, value => [1.0, 2.5, 0], ease => "in_out_sine" },
+          { t => 1.5, value => [1.4, 1.6, 0], ease => "in_out_sine" },
+          { t => 2.0, value => [2.0, 1.4, 0], ease => "in_out_sine" },
+        ]
+      }
     }
   }
 
