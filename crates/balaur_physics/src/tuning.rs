@@ -73,8 +73,8 @@ macro_rules! write_parameters {
     }};
 }
 
-/// Applied once, after the project has loaded, from `[physics]` in
-/// `project.toml`. A game with no such section keeps rapier's defaults.
+/// Applied once, after the project has loaded, from `@ physics` in
+/// `project.eure`. A game with no such section keeps rapier's defaults.
 pub(crate) fn build(app: &mut App) {
     app.engine
         .insert_resource(ManifestTuning { applied: false });
@@ -99,13 +99,17 @@ fn manifest_tuning_system(eng: &Engine, _dt: f32) {
             return;
         };
         flag.borrow_mut().applied = true;
-        let Ok(manifest) = source.parse::<toml::Value>() else {
+        let Ok(manifest) = eure::parse_content::<balaur_core::eure_value::EureValue>(
+            &source,
+            std::path::PathBuf::from("project.eure"),
+        ) else {
             return;
         };
         let Some(section) = manifest.get("physics") else {
             return;
         };
-        write_tuning_from_toml(eng, section);
+        let section = balaur_core::node_api::eure_to_toml(&section);
+        write_tuning_from_toml(eng, &section);
     }
 }
 

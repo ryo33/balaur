@@ -3,40 +3,43 @@
 //! A project is a directory (Godot-style):
 //!
 //! ```text
-//! project.toml          # name + main scene
-//! scenes/main.toml      # node tree
-//! scripts/*.rn          # node scripts
+//! project.eure           # name + main scene
+//! scenes/main.eure        # node tree
+//! scripts/*.rn            # node scripts
 //! ```
 //!
 //! Scene files declare the node tree; behavior lives in scripts. Keys the
 //! core does not know are dispatched to plugin-registered handlers, so a
 //! plugin can teach scenes new keys (e.g. `shape = "ball"`).
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
+use std::path::PathBuf;
 
 use crate::assets::SceneAsset;
 use crate::collections::DetHashMap;
 use crate::components::StableId;
+use crate::eure_value::EureValue;
 use anyhow::{anyhow, bail, Context, Result};
 use balaur_script::Value;
+use eure::FromEure;
 use glamx::{EulerRot, Quat, Vec3};
 use hecs::Entity;
-use serde::Deserialize;
 
 use crate::engine::Engine;
 use crate::scene::{self, Transform};
 
-#[derive(Deserialize, Clone)]
+#[derive(FromEure, Clone)]
+#[eure(crate = ::eure::document)]
 pub struct ProjectManifest {
     pub name: String,
     pub main_scene: String,
     /// Which scripting language this project is written in. The assembling
     /// crate maps the name to a backend; core does not know the set.
-    #[serde(default = "default_language")]
+    #[eure(default = "default_language")]
     pub language: String,
     /// Where a shipped game may read assets from. Only bites once packed;
     /// a dev run always reads the source tree.
-    #[serde(default)]
+    #[eure(default)]
     pub assets: AssetSource,
 }
 
@@ -45,70 +48,84 @@ fn default_language() -> String {
 }
 
 impl ProjectManifest {
+    /// Parses `project.eure`'s text directly, without going through an
+    /// engine's incremental runtime.
+    ///
+    /// Used at the one place a manifest is read before an `Engine` exists
+    /// (picking the script backend); everywhere else, prefer parsing through
+    /// [`crate::eure_runtime::of`] so repeated loads are cached.
     pub fn parse(source: &str) -> Result<Self> {
-        toml::from_str(source).context("parsing project.toml")
+        eure::parse_content(source, PathBuf::from("project.eure"))
+            .map_err(|err| anyhow::anyhow!("parsing project.eure: {err}"))
     }
 }
 
-#[derive(Deserialize)]
+#[derive(FromEure, Clone)]
+#[eure(crate = ::eure::document)]
 struct SceneDoc {
     /// Assets this scene owns, addressable as `#id` from any node in it —
     /// Godot's `[sub_resource]`. See `crate::assets`.
-    #[serde(default)]
+    #[eure(default)]
     assets: Vec<SceneAsset>,
-    #[serde(default)]
+    #[eure(default)]
     nodes: Vec<SceneNode>,
 }
 
-#[derive(Deserialize)]
+#[derive(FromEure, Clone)]
+#[eure(crate = ::eure::document)]
 struct SceneNode {
     /// Stable identity, assigned once and never reused.
     ///
     /// `parent` refers to this, so renaming a node cannot silently reparent
     /// its children and two siblings may share a display name. Omitted or
     /// duplicated ids are repaired at load; see [`repair_ids`].
-    #[serde(default)]
+    #[eure(default)]
     id: String,
     name: String,
     /// The parent's `id`. Omitted or empty means a root child.
-    #[serde(default)]
+    #[eure(default)]
     parent: String,
+    #[eure(default)]
     position: Option<[f32; 3]>,
+    #[eure(default)]
     rotation_euler: Option<[f32; 3]>,
+    #[eure(default)]
     scale: Option<[f32; 3]>,
+    #[eure(default)]
     script: Option<ScriptRef>,
     /// A prefab: another scene file, built as this node's children.
     ///
     /// The node keeps its own name, transform and components — they are the
     /// instance's, not the prefab's — and the prefab's roots become its
     /// children, which is what `scene::instantiate` does from a script.
+    #[eure(default)]
     instance: Option<String>,
     /// Per-node edits inside the instance, keyed by path from this node:
-    /// `[nodes.overrides."Body/Arm"]`. Each holds scene keys, applied after
-    /// the prefab is built, in key order.
-    #[serde(default)]
-    overrides: toml::Table,
+    /// `overrides."Body/Arm"`. Each holds scene keys, applied after the
+    /// prefab is built, in key order.
+    #[eure(default)]
+    overrides: BTreeMap<String, EureValue>,
     /// Plugin-owned keys, dispatched to scene key handlers.
-    #[serde(flatten)]
-    extra: HashMap<String, toml::Value>,
+    #[eure(flatten)]
+    extra: HashMap<String, EureValue>,
 }
 
 /// A node's `script`: a path, or a path with the properties this node sets.
 ///
 /// `props` holds only what differs from the script's exported defaults, so a
 /// changed default reaches every node that did not override it.
-#[derive(Deserialize)]
-#[serde(untagged)]
+#[derive(FromEure, Clone)]
+#[eure(crate = ::eure::document)]
 enum ScriptRef {
     Source(String),
     Tuned {
         /// Absent in an override, which retunes the script the prefab already
         /// gave the node rather than replacing it. A node's own `script` must
         /// name one, and is told so if it does not.
-        #[serde(default)]
+        #[eure(default)]
         source: String,
-        #[serde(default)]
-        props: toml::Table,
+        #[eure(default)]
+        props: BTreeMap<String, EureValue>,
     },
 }
 
@@ -119,15 +136,15 @@ impl ScriptRef {
         }
     }
 
-    /// The node's overrides, as the host takes them. Order is the table's,
-    /// which `toml` keeps sorted, so two runs write the same instance.
+    /// The node's overrides, as the host takes them. Order is the map's,
+    /// which is sorted, so two runs write the same instance.
     fn props(&self) -> Result<Vec<(String, Value)>> {
         let Self::Tuned { props, .. } = self else {
             return Ok(Vec::new());
         };
         props
             .iter()
-            .map(|(k, v)| Ok((k.clone(), crate::node_api::from_toml(v)?)))
+            .map(|(k, v)| Ok((k.clone(), crate::node_api::from_eure(v)?)))
             .collect()
     }
 }
@@ -149,7 +166,7 @@ pub struct SceneKeyRegistry(pub Vec<(String, SceneKeyHandler)>);
 /// The manifest's own text, kept because `ProjectManifest` is typed and a
 /// plugin's table is not one of its fields.
 ///
-/// `ProjectFiles::read("project.toml")` is not the answer: a pack carries the
+/// `ProjectFiles::read("project.eure")` is not the answer: a pack carries the
 /// manifest beside the assets rather than among them, so a shipped game would
 /// find nothing there and silently take every default.
 pub struct ManifestSource(pub String);
@@ -166,11 +183,11 @@ pub fn manifest_source(eng: &Engine) -> Option<String> {
 pub struct ProjectRoot(pub std::path::PathBuf);
 
 /// Where a project is allowed to read its bytes from, set by `assets` in
-/// `project.toml`. The default is deliberately the strict one: a shipped game
+/// `project.eure`. The default is deliberately the strict one: a shipped game
 /// that quietly falls back to the working directory runs on the machine that
 /// built it and nowhere else.
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default, FromEure)]
+#[eure(crate = ::eure::document, rename_all = "lowercase")]
 pub enum AssetSource {
     /// The pack only. A miss is an error naming the file.
     #[default]
@@ -179,7 +196,7 @@ pub enum AssetSource {
     Files,
     /// The pack first, then the directory — loose DLC, mods, or an override
     /// folder shipped beside the executable.
-    #[serde(rename = "embedded+files")]
+    #[eure(rename = "embedded+files")]
     EmbeddedThenFiles,
 }
 
@@ -267,7 +284,7 @@ impl ProjectFiles {
         }
         Err(anyhow!(
             "no asset '{path}' in the pack. It ships only what `balaur export` \
-             collected; set `assets = \"embedded+files\"` in project.toml to also \
+             collected; set `assets = \"embedded+files\"` in project.eure to also \
              read files beside the game."
         ))
     }
@@ -323,7 +340,9 @@ pub fn instantiate_scene(
         pending: Vec::new(),
         attach_scripts,
     };
-    build_scene(eng, source, base, &mut build)?;
+    // No path: this is the outermost scene, loaded once regardless, so there
+    // is nothing to gain from routing it through the cache.
+    build_scene(eng, None, source, base, &mut build)?;
     attach_pending(eng, &build)
 }
 
@@ -343,8 +362,25 @@ struct Build {
 }
 
 /// Parse and build one scene document under `base`.
-fn build_scene(eng: &Engine, source: &str, base: Entity, build: &mut Build) -> Result<()> {
-    let doc: SceneDoc = toml::from_str(source).context("parsing scene")?;
+///
+/// `path` is the scene's project-relative path when known, used as the
+/// incremental runtime's cache key: a prefab instantiated many times in one
+/// scene reparses only the first time. `None` (the outermost scene, loaded
+/// once regardless) parses without going through the cache.
+fn build_scene(
+    eng: &Engine,
+    path: Option<&str>,
+    source: &str,
+    base: Entity,
+    build: &mut Build,
+) -> Result<()> {
+    let doc: SceneDoc = match path {
+        Some(path) => crate::eure_runtime::of(eng)
+            .borrow()
+            .parse(std::path::Path::new(path), source)?,
+        None => eure::parse_content(source, std::path::PathBuf::from("scene.eure"))
+            .map_err(|err| anyhow!("parsing scene: {err}"))?,
+    };
     // A scene's `[[assets]]` are in scope only while it is being built, so
     // `#id` never resolves against a sibling scene; a prefab's own blocks nest
     // inside that rather than accumulating.
@@ -421,7 +457,8 @@ fn instantiate_nodes(eng: &Engine, doc: &SceneDoc, base: Entity, build: &mut Bui
         }
         for (key, handler) in handlers {
             if let Some(value) = node.extra.get(key) {
-                handler(eng, entity, value)
+                let value = crate::node_api::eure_to_toml(value);
+                handler(eng, entity, &value)
                     .with_context(|| format!("scene key '{key}' on node '{}'", node.name))?;
             }
         }
@@ -472,7 +509,7 @@ fn build_instance(
     let inner = format!("{}{}/", build.prefix, id);
     let outer = std::mem::replace(&mut build.prefix, inner);
     build.open.push(prefab.to_string());
-    let outcome = build_scene(eng, &source, entity, build);
+    let outcome = build_scene(eng, Some(prefab), &source, entity, build);
     build.open.pop();
     build.prefix = outer;
     outcome
@@ -499,16 +536,16 @@ fn apply_overrides(
             );
             continue;
         };
-        let Some(table) = table.as_table() else {
+        if !table.is_table() {
             tracing::warn!(
                 "override '{path}' on node '{}' is not a table of scene keys",
                 node.name
             );
             continue;
-        };
+        }
         apply_transform_keys(eng, target, table);
         if let Some(script) = table.get("script") {
-            if let Err(err) = override_script(build, target, script) {
+            if let Err(err) = override_script(build, target, &script) {
                 tracing::error!("override '{path}.script' on node '{}': {err:#}", node.name);
             }
         }
@@ -519,19 +556,20 @@ fn apply_overrides(
             // An override *patches* one property of a component the prefab
             // already described. The scene key handler would rebuild it from
             // the schema defaults, resetting every property it does not name.
+            let value = crate::node_api::eure_to_toml(&value);
             let applied = if crate::components::is_registered(eng, key) {
-                crate::components::patch(eng, target, key, value)
+                crate::components::patch(eng, target, key, &value)
             } else {
-                handler(eng, target, value)
+                handler(eng, target, &value)
             };
             if let Err(err) = applied {
                 tracing::error!("override '{path}.{key}' on node '{}': {err:#}", node.name);
             }
         }
-        for key in table.keys() {
+        for (key, _) in table.iter_table() {
             if key != "script"
                 && !TRANSFORM_KEYS.contains(&key.as_str())
-                && !handlers.iter().any(|(k, _)| k == key)
+                && !handlers.iter().any(|(k, _)| *k == key)
             {
                 tracing::warn!(
                     "override '{path}.{key}' on node '{}' has no registered handler",
@@ -550,8 +588,8 @@ fn apply_overrides(
 /// is attached once the whole tree exists — which has not happened yet. An
 /// override on a node the prefab gave no script to is one nothing can act on,
 /// so it says so.
-fn override_script(build: &mut Build, target: Entity, value: &toml::Value) -> Result<()> {
-    let over: ScriptRef = value.clone().try_into().context("reading the script key")?;
+fn override_script(build: &mut Build, target: Entity, value: &EureValue) -> Result<()> {
+    let over: ScriptRef = value.parse().context("reading the script key")?;
     let props = over.props()?;
     let Some(pending) = build.pending.iter_mut().find(|(e, _, _)| *e == target) else {
         bail!("the node it names has no script to retune");
@@ -571,7 +609,7 @@ fn override_script(build: &mut Build, target: Entity, value: &toml::Value) -> Re
 /// The keys every node has, which an override may set like any other.
 const TRANSFORM_KEYS: [&str; 3] = ["position", "rotation_euler", "scale"];
 
-fn apply_transform_keys(eng: &Engine, entity: Entity, table: &toml::Table) {
+fn apply_transform_keys(eng: &Engine, entity: Entity, table: &EureValue) {
     let world = eng.world();
     let Ok(mut transform) = world.get::<&mut Transform>(entity) else {
         return;
@@ -587,16 +625,14 @@ fn apply_transform_keys(eng: &Engine, entity: Entity, table: &toml::Table) {
     }
 }
 
-fn triple(value: Option<&toml::Value>) -> Option<[f32; 3]> {
-    let items = value?.as_array()?;
+fn triple(value: Option<EureValue>) -> Option<[f32; 3]> {
+    let items = value?.as_array_items();
     if items.len() != 3 {
         return None;
     }
     let mut out = [0.0; 3];
-    for (slot, item) in out.iter_mut().zip(items) {
-        *slot = item
-            .as_float()
-            .or_else(|| item.as_integer().map(|i| i as f64))? as f32;
+    for (slot, item) in out.iter_mut().zip(&items) {
+        *slot = item.as_float()? as f32;
     }
     Some(out)
 }

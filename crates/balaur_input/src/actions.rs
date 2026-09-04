@@ -353,29 +353,31 @@ pub(crate) fn add_replay_setup(app: &mut balaur_core::App) {
     app.add_replay_setup("input_bindings", capture_bindings, restore_bindings);
 }
 
-/// The `[input.actions]` table of the project's manifest.
+/// The `@ input.actions` section of the project's manifest.
 ///
 /// A binding that does not parse is reported and dropped; an action with no
 /// usable binding still exists, reading zero, because a game asking for it
 /// should get a neutral answer rather than a crash.
 fn load(eng: &Engine) -> BTreeMap<String, Vec<Binding>> {
-    #[derive(serde::Deserialize, Default)]
+    #[derive(eure::FromEure, Default)]
+    #[eure(crate = ::eure::document)]
     struct InputTable {
-        #[serde(default)]
+        #[eure(default)]
         actions: BTreeMap<String, Vec<String>>,
     }
-    #[derive(serde::Deserialize)]
+    #[derive(eure::FromEure)]
+    #[eure(crate = ::eure::document)]
     struct Manifest {
-        #[serde(default)]
+        #[eure(default)]
         input: InputTable,
     }
     let Some(source) = balaur_core::project::manifest_source(eng) else {
         return BTreeMap::new();
     };
-    let declared = match toml::from_str::<Manifest>(&source) {
+    let declared = match eure::parse_content::<Manifest>(&source, std::path::PathBuf::from("project.eure")) {
         Ok(manifest) => manifest.input.actions,
         Err(err) => {
-            tracing::warn!("project.toml [input.actions]: {err}; no actions declared");
+            tracing::warn!("project.eure [input.actions]: {err}; no actions declared");
             return BTreeMap::new();
         }
     };

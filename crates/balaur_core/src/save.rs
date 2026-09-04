@@ -5,33 +5,45 @@
 //! engine only decides where it lives, that a half-written file cannot
 //! replace a good one, and what version it was written at.
 //!
-//! ```toml
-//! [save]
+//! ```eure
+//! @ save
 //! version = 3                       # what this build writes
 //! migrate = "scripts/saves.rn"      # brings an older file forward
 //! ```
+//!
+//! Save *files* themselves (`saves/<slot>.toml`) stay plain TOML, on purpose:
+//! they are not human-authored project content, just this engine's own
+//! serialization of whatever the game handed [`write`], so there is nothing
+//! to gain from Eure's editor/schema experience there.
 
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
+use eure::FromEure;
 
 use crate::engine::Engine;
 
-/// What `project.toml` says about saves.
+/// What `project.eure` says about saves.
 ///
-/// A project with no `[save]` table writes version 1 and migrates nothing,
+/// A project with no `@ save` section writes version 1 and migrates nothing,
 /// which is the right behaviour for a game that has not needed to change a
 /// save's shape yet.
-#[derive(Clone, Debug, serde::Deserialize)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Clone, Debug, FromEure)]
+#[eure(crate = ::eure::document)]
 pub struct SaveConfig {
     /// The version this build writes. A file read at a lower one is migrated;
     /// a file at a higher one is refused, because a future save is not
     /// something an older build can guess at.
+    #[eure(default = "default_version")]
     pub version: u32,
     /// A script whose `migrate_save(version, data)` brings a file forward one
     /// version per call. Empty means the game has none.
+    #[eure(default)]
     pub migrate: String,
+}
+
+fn default_version() -> u32 {
+    1
 }
 
 impl Default for SaveConfig {
@@ -44,21 +56,22 @@ impl Default for SaveConfig {
 }
 
 impl SaveConfig {
-    /// The `[save]` table of the project's manifest, or the defaults.
+    /// The `@ save` section of the project's manifest, or the defaults.
     #[must_use]
     pub fn load(eng: &Engine) -> Self {
-        #[derive(serde::Deserialize)]
+        #[derive(FromEure)]
+        #[eure(crate = ::eure::document)]
         struct Manifest {
-            #[serde(default)]
+            #[eure(default)]
             save: SaveConfig,
         }
         let Some(source) = crate::project::manifest_source(eng) else {
             return Self::default();
         };
-        match toml::from_str::<Manifest>(&source) {
+        match eure::parse_content::<Manifest>(&source, PathBuf::from("project.eure")) {
             Ok(manifest) => manifest.save,
             Err(err) => {
-                tracing::warn!("project.toml [save]: {err}; using the defaults");
+                tracing::warn!("project.eure [save]: {err}; using the defaults");
                 Self::default()
             }
         }

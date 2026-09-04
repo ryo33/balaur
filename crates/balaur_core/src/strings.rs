@@ -1,9 +1,9 @@
-//! Localization: `strings/<locale>.toml`, one file per language.
+//! Localization: `strings/<locale>.eure`, one file per language.
 //!
-//! ```toml
-//! # strings/en.toml
-//! "menu.play" = "Play"
-//! "menu.items" = { one = "{n} item", other = "{n} items" }
+//! ```eure
+//! # strings/en.eure
+//! "menu.play": Play
+//! "menu.items" { one: "{n} item", other: "{n} items" }
 //! ```
 //!
 //! `strings.tr("menu.play")` reads the current locale, falls back to the
@@ -13,21 +13,29 @@
 
 use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::path::Path;
 
 use anyhow::Result;
+use eure::FromEure;
 
 use crate::engine::Engine;
 
-/// What `project.toml` says about languages.
-#[derive(Clone, Debug, serde::Deserialize)]
-#[serde(default, deny_unknown_fields)]
+/// What `project.eure` says about languages.
+#[derive(Clone, Debug, FromEure)]
+#[eure(crate = ::eure::document)]
 pub struct LocaleConfig {
     /// The locale a fresh run starts in.
+    #[eure(default = "default_locale")]
     pub default: String,
     /// Where a key missing from the current locale is looked for next. One
     /// step, not a chain: two hops means two files to keep in mind, and the
     /// second one is always the language the game was written in.
+    #[eure(default = "default_locale")]
     pub fallback: String,
+}
+
+fn default_locale() -> String {
+    "en".to_string()
 }
 
 impl Default for LocaleConfig {
@@ -42,18 +50,19 @@ impl Default for LocaleConfig {
 impl LocaleConfig {
     #[must_use]
     pub fn load(eng: &Engine) -> Self {
-        #[derive(serde::Deserialize)]
+        #[derive(FromEure)]
+        #[eure(crate = ::eure::document)]
         struct Manifest {
-            #[serde(default)]
+            #[eure(default)]
             locale: LocaleConfig,
         }
         let Some(source) = crate::project::manifest_source(eng) else {
             return Self::default();
         };
-        match toml::from_str::<Manifest>(&source) {
+        match eure::parse_content::<Manifest>(&source, std::path::PathBuf::from("project.eure")) {
             Ok(manifest) => manifest.locale,
             Err(err) => {
-                tracing::warn!("project.toml [locale]: {err}; using the defaults");
+                tracing::warn!("project.eure [locale]: {err}; using the defaults");
                 Self::default()
             }
         }
@@ -144,7 +153,7 @@ fn language_of(locale: &str) -> &str {
 /// Read a locale's file. A locale with no file is an empty catalogue rather
 /// than an error: a game may ship one language ahead of the rest.
 fn read(eng: &Engine, locale: &str) -> Catalogue {
-    let path = format!("strings/{locale}.toml");
+    let path = format!("strings/{locale}.eure");
     let root = eng.resource::<Strings>().borrow().root.clone();
     let read = match &root {
         Some(root) => std::fs::read_to_string(root.join(&path)).map_err(anyhow::Error::from),
@@ -153,7 +162,10 @@ fn read(eng: &Engine, locale: &str) -> Catalogue {
     let Ok(source) = read else {
         return Catalogue::default();
     };
-    let parsed: toml::Value = match toml::from_str(&source) {
+    let parsed: crate::eure_value::EureValue = match crate::eure_runtime::of(eng)
+        .borrow()
+        .parse(Path::new(&path), &source)
+    {
         Ok(parsed) => parsed,
         Err(err) => {
             tracing::warn!("{path}: {err}; that locale reads as empty");
@@ -161,24 +173,24 @@ fn read(eng: &Engine, locale: &str) -> Catalogue {
         }
     };
     let mut catalogue = Catalogue::default();
-    let Some(table) = parsed.as_table() else {
+    if !parsed.is_table() {
         return catalogue;
-    };
-    for (key, value) in table {
-        let entry = match value {
-            toml::Value::String(text) => Entry::One(text.clone()),
-            toml::Value::Table(forms) => Entry::Plural(
-                forms
-                    .iter()
-                    .filter_map(|(k, v)| Some((k.clone(), v.as_str()?.to_string())))
+    }
+    for (key, value) in parsed.iter_table() {
+        let entry = if let Some(text) = value.as_str() {
+            Entry::One(text.to_string())
+        } else if value.is_table() {
+            Entry::Plural(
+                value
+                    .iter_table()
+                    .filter_map(|(k, v)| Some((k, v.as_str()?.to_string())))
                     .collect(),
-            ),
-            other => {
-                tracing::warn!("{path}: '{key}' is a {}, not a string", other.type_str());
-                continue;
-            }
+            )
+        } else {
+            tracing::warn!("{path}: '{key}' is a {}, not a string", value.type_name());
+            continue;
         };
-        catalogue.entries.insert(key.clone(), entry);
+        catalogue.entries.insert(key, entry);
     }
     catalogue
 }
@@ -242,7 +254,7 @@ pub fn locales(eng: &Engine) -> Vec<String> {
     if let Ok(entries) = std::fs::read_dir(root.join("strings")) {
         for entry in entries.flatten() {
             let name = entry.file_name().to_string_lossy().into_owned();
-            if let Some(locale) = name.strip_suffix(".toml") {
+            if let Some(locale) = name.strip_suffix(".eure") {
                 out.push(locale.to_string());
             }
         }

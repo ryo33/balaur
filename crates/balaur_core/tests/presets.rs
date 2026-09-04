@@ -117,17 +117,18 @@ fn a_component_with_no_expectations_never_warns() {
 }
 
 #[test]
-fn a_project_preset_is_parsed_from_toml() {
+fn a_project_preset_is_parsed_from_eure() {
     let body = r#"
 description = "A patrolling enemy"
 tags = ["2d"]
 components = [
-  { component = "shape2d", kind = "rect" },
-  { component = "color" },
+  { component => "shape2d", kind => "rect" },
+  { component => "color" },
 ]
 "#;
-    let body: toml::Value = toml::from_str(body).unwrap();
-    let def = presets::from_toml("enemy", &body).unwrap();
+    let body: balaur_core::eure_value::EureValue =
+        eure::parse_content(body, "preset.eure".into()).unwrap();
+    let def = presets::from_eure("enemy", &body).unwrap();
     assert_eq!(def.description, "A patrolling enemy");
     assert_eq!(def.tags, vec!["2d".to_string()]);
     assert_eq!(def.parts.len(), 2);
@@ -141,7 +142,8 @@ components = [
 
 #[test]
 fn a_project_preset_without_components_is_an_error() {
-    let body: toml::Value = toml::from_str("description = \"x\"").unwrap();
-    let err = presets::from_toml("broken", &body).unwrap_err();
+    let body: balaur_core::eure_value::EureValue =
+        eure::parse_content("description = \"x\"", "preset.eure".into()).unwrap();
+    let err = presets::from_eure("broken", &body).unwrap_err();
     assert!(err.to_string().contains("components"), "{err}");
 }

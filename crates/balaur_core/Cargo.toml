@@ -11,7 +11,10 @@ hecs.workspace = true
 glamx.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+# Save-game files only (crates/balaur_core/src/save.rs); everything else
+# (project/scene/asset/component documents) is Eure.
 toml.workspace = true
+eure.workspace = true
 anyhow.workspace = true
 indexmap.workspace = true
 rustc-hash.workspace = true

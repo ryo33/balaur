@@ -65,12 +65,12 @@ modules! {
     websocket = "websocket" => balaur_websocket::WebsocketPlugin,
 }
 
-/// The script backend a project asks for in its `project.toml`. Rune is the
+/// The script backend a project asks for in its `project.eure`. Rune is the
 /// one language this build ships; the field stays so a project states it.
 fn backend_for(config: &AppConfig) -> Result<balaur_core::ScriptHostFactory> {
     let manifest = match &config.pack {
         Some(pack) => Some(pack.manifest.clone()),
-        None => std::fs::read_to_string(config.project_root.join("project.toml")).ok(),
+        None => std::fs::read_to_string(config.project_root.join("project.eure")).ok(),
     };
     let language = manifest
         .as_deref()
@@ -79,7 +79,7 @@ fn backend_for(config: &AppConfig) -> Result<balaur_core::ScriptHostFactory> {
     match language.as_str() {
         "rune" => Ok(balaur_script_rune::factory()),
         other => Err(anyhow::anyhow!(
-            "project.toml asks for language \"{other}\"; this build has rune"
+            "project.eure asks for language \"{other}\"; this build has rune"
         )),
     }
 }
