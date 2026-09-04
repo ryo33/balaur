@@ -33,11 +33,11 @@ wanted() { # wanted <name>: true when no names were given or this one was
 }
 
 # Every file a sequence may write, scene files included: a save that lands on
-# the document re-serialises its TOML.
+# the document re-serialises its Eure.
 edited=(examples/hello/scripts/spinner.rn examples/shaders/shaders/glow.wesl
-  examples/hello/scenes/main.toml examples/angrynerds/scenes/main.toml
-  examples/rig/scenes/main.toml examples/shaders/scenes/main.toml)
-# Keyed by the whole path: every example's scene file is called main.toml,
+  examples/hello/scenes/main.eure examples/angrynerds/scenes/main.eure
+  examples/rig/scenes/main.eure examples/shaders/scenes/main.eure)
+# Keyed by the whole path: every example's scene file is called main.eure,
 # and one shared slot would restore each of them from the last one backed up.
 slot() { printf '%s/orig-%s' "$work" "${1//\//_}"; }
 backup_examples() { local f; for f in "${edited[@]}"; do cp "$f" "$(slot "$f")"; done; }
