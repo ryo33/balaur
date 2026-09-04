@@ -8,8 +8,7 @@ authors.workspace = true
 [dependencies]
 balaur = { workspace = true, default-features = false }
 anyhow.workspace = true
-serde.workspace = true
-toml.workspace = true
+eure.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]

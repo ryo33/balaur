@@ -176,7 +176,7 @@ enum Command {
     Api,
     /// Bring a `.glb` model into a project: the file under `models/`, its
     /// node hierarchy as a scene with `bone3d` on every joint, and its
-    /// animations as a clip library — all plain TOML the editor edits.
+    /// animations as a clip library — all plain Eure the editor edits.
     Import {
         /// The model to import (self-contained .glb).
         file: PathBuf,
@@ -560,7 +560,7 @@ const OFFSCREEN_SIZE: (u32, u32) = (1600, 1000);
 /// A canonical path the rest of the engine can join to with `/`.
 ///
 /// Windows' canonical form is a `\\?\` UNC path, which turns *off* path
-/// normalisation: the editor builds `<root>/project.toml` by hand and every
+/// normalisation: the editor builds `<root>/project.eure` by hand and every
 /// such join then fails to open.
 fn joinable(path: &Path) -> PathBuf {
     let text = path.to_string_lossy();
@@ -669,12 +669,12 @@ fn dump_api() -> Result<()> {
     let dir = std::env::temp_dir().join("balaur-api-probe");
     std::fs::create_dir_all(dir.join("scenes"))?;
     std::fs::write(
-        dir.join("project.toml"),
-        "name = \"api\"\nmain_scene = \"scenes/main.toml\"\n",
+        dir.join("project.eure"),
+        "name = \"api\"\nmain_scene = \"scenes/main.eure\"\n",
     )?;
     std::fs::write(
-        dir.join("scenes/main.toml"),
-        "[[nodes]]\nid = \"n\"\nname = \"Root\"\n",
+        dir.join("scenes/main.eure"),
+        "@ nodes[]\nid: n\nname: Root\n",
     )?;
 
     let mut app = balaur::standard_app(AppConfig::dev(dir.to_string_lossy().as_ref()))?;
@@ -740,8 +740,8 @@ fn dump_api() -> Result<()> {
 }
 
 /// `balaur import model.glb --project game`: `models/model.glb` (and the
-/// files a `.gltf` names beside itself), `scenes/model.toml` and, with
-/// animations, `animations/model.toml`.
+/// files a `.gltf` names beside itself), `scenes/model.eure` and, with
+/// animations, `animations/model.eure`.
 fn import_model(file: &Path, project: &Path) -> Result<()> {
     let bytes = std::fs::read(file).with_context(|| format!("reading {}", file.display()))?;
     let stem = file
@@ -777,12 +777,12 @@ fn import_model(file: &Path, project: &Path) -> Result<()> {
         std::fs::write(&path, data)?;
         println!("wrote {}", path.display());
     }
-    let scene = project.join("scenes").join(format!("{stem}.toml"));
-    std::fs::write(&scene, imported.scene_toml()?)?;
+    let scene = project.join("scenes").join(format!("{stem}.eure"));
+    std::fs::write(&scene, imported.scene_eure())?;
     println!("wrote {}", scene.display());
-    if let Some(clips) = imported.clips_toml()? {
+    if let Some(clips) = imported.clips_eure() {
         std::fs::create_dir_all(project.join("animations"))?;
-        let library = project.join("animations").join(format!("{stem}.toml"));
+        let library = project.join("animations").join(format!("{stem}.eure"));
         std::fs::write(&library, clips)?;
         println!("wrote {}", library.display());
     }
@@ -796,14 +796,14 @@ fn new_project(path: &Path) -> Result<()> {
     std::fs::create_dir_all(path.join("scenes"))?;
     std::fs::create_dir_all(path.join("scripts"))?;
     std::fs::write(
-        path.join("project.toml"),
-        format!("name = \"{name}\"\nmain_scene = \"scenes/main.toml\"\n"),
+        path.join("project.eure"),
+        format!("name = \"{name}\"\nmain_scene = \"scenes/main.eure\"\n"),
     )?;
     std::fs::write(
-        path.join("scenes/main.toml"),
-        r#"[[nodes]]
-name = "Hello"
-script = "scripts/hello.rn"
+        path.join("scenes/main.eure"),
+        r#"@ nodes[]
+name: Hello
+script: scripts/hello.rn
 "#,
     )?;
     std::fs::write(
@@ -828,7 +828,7 @@ mod tests {
     use super::joinable;
     use std::path::{Path, PathBuf};
 
-    /// The editor joins `<root>/project.toml` by hand, which a `\\?\` path
+    /// The editor joins `<root>/project.eure` by hand, which a `\\?\` path
     /// cannot open: Windows stops normalising one, so `/` is not a separator.
     #[test]
     fn a_canonical_windows_path_is_made_joinable() {

@@ -501,17 +501,14 @@ pub struct GlbImport {
 }
 
 impl GlbImport {
-    /// The scene as the text `scenes/<stem>.toml` holds.
-    pub fn scene_toml(&self) -> Result<String> {
-        Ok(toml::to_string(&self.scene)?)
+    /// The scene as the text `scenes/<stem>.eure` holds.
+    pub fn scene_eure(&self) -> String {
+        crate::node_api::toml_to_eure_text(&self.scene)
     }
 
-    /// The clip library as the text `animations/<stem>.toml` holds.
-    pub fn clips_toml(&self) -> Result<Option<String>> {
-        self.clips
-            .as_ref()
-            .map(|clips| toml::to_string(clips).map_err(Into::into))
-            .transpose()
+    /// The clip library as the text `animations/<stem>.eure` holds.
+    pub fn clips_eure(&self) -> Option<String> {
+        self.clips.as_ref().map(crate::node_api::toml_to_eure_text)
     }
 }
 
@@ -541,7 +538,7 @@ fn slug(name: &str) -> String {
 
 /// The scene and clips a model becomes. `model_file` is the name the model
 /// will have under `models/` (`hero.glb`, `hero.gltf`); its stem names the
-/// clip library, `animations/<stem>.toml`, and the scene's root node.
+/// clip library, `animations/<stem>.eure`, and the scene's root node.
 ///
 /// # Errors
 /// If the file does not read.
@@ -575,7 +572,7 @@ pub fn import(bytes: &[u8], model_file: &str, side: SideReader<'_>) -> Result<Gl
         let mut animation = toml::map::Map::new();
         animation.insert(
             "library".into(),
-            toml::Value::String(format!("animations/{stem}.toml")),
+            toml::Value::String(format!("animations/{stem}.eure")),
         );
         animation.insert("autoplay".into(), toml::Value::String(first));
         root.insert("animation".into(), toml::Value::Table(animation));

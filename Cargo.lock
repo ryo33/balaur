@@ -507,9 +507,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "balaur",
- "serde",
+ "eure",
  "tempfile",
- "toml",
  "tracing",
 ]
 

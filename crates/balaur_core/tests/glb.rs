@@ -312,7 +312,7 @@ fn an_import_writes_bones_a_mesh_node_and_a_clip_keyed_by_path() {
     let animation = root.get("animation").unwrap();
     assert_eq!(
         animation.get("library").unwrap().as_str(),
-        Some("animations/column.toml")
+        Some("animations/column.eure")
     );
     assert_eq!(animation.get("autoplay").unwrap().as_str(), Some("wave"));
 
