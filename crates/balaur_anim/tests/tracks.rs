@@ -318,7 +318,7 @@ fn just_finished_answers_for_one_frame_and_names_the_clip() {
         &app,
         entity,
         "animation",
-        r#"library = "animations/hero.toml"
+        r#"library = "animations/hero.eure"
 autoplay = "spin""#,
     );
 
@@ -344,7 +344,7 @@ fn a_queued_clip_starts_when_the_one_before_it_ends() {
         &app,
         entity,
         "animation",
-        r#"library = "animations/hero.toml"
+        r#"library = "animations/hero.eure"
 autoplay = "spin""#,
     );
     balaur_anim::queue(&app.engine, entity, "idle");
@@ -372,7 +372,7 @@ fn pause_holds_the_playhead_and_resume_carries_on_from_it() {
         &app,
         entity,
         "animation",
-        r#"library = "animations/hero.toml"
+        r#"library = "animations/hero.eure"
 autoplay = "idle""#,
     );
 
@@ -406,7 +406,7 @@ fn stop_ends_the_clip_where_pause_only_holds_it() {
         &app,
         entity,
         "animation",
-        r#"library = "animations/hero.toml"
+        r#"library = "animations/hero.eure"
 autoplay = "idle""#,
     );
     tick(&mut app, 10);
@@ -472,7 +472,7 @@ fn play_can_pick_the_current_clip_back_up_where_it_left_off() {
         &app,
         entity,
         "animation",
-        r#"library = "animations/hero.toml"
+        r#"library = "animations/hero.eure"
 autoplay = "idle""#,
     );
     tick(&mut app, 20);
@@ -501,7 +501,7 @@ fn every_player_advances_in_the_same_order_on_every_run() {
                 &app,
                 entity,
                 "animation",
-                r#"library = "animations/hero.toml"
+                r#"library = "animations/hero.eure"
 autoplay = "idle""#,
             );
         }

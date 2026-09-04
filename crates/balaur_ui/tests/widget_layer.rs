@@ -10,11 +10,11 @@ use egui::{pos2, vec2, Modifiers, PointerButton, Rect};
 fn app() -> (tempfile::TempDir, App) {
     let dir = tempfile::tempdir().unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"w\"\nmain_scene = \"main.toml\"\n",
+        dir.path().join("project.eure"),
+        "name = \"w\"\nmain_scene = \"main.eure\"\n",
     )
     .unwrap();
-    std::fs::write(dir.path().join("main.toml"), "").unwrap();
+    std::fs::write(dir.path().join("main.eure"), "").unwrap();
     let mut config = AppConfig::dev(dir.path().to_string_lossy().as_ref());
     config.watch = false;
     (dir, standard_app(config).unwrap())
@@ -511,17 +511,17 @@ fn a_pending_move_from_a_script_is_taken_at_the_next_draw() {
 fn a_theme_is_inherited_by_everything_under_it() {
     let dir = tempfile::tempdir().unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"t\"\nmain_scene = \"main.toml\"\n",
+        dir.path().join("project.eure"),
+        "name = \"t\"\nmain_scene = \"main.eure\"\n",
     )
     .unwrap();
-    std::fs::write(dir.path().join("main.toml"), "").unwrap();
+    std::fs::write(dir.path().join("main.eure"), "").unwrap();
     std::fs::create_dir_all(dir.path().join("themes")).unwrap();
     // A padding a long way from the built-in 8, so the panel's size says
     // whether the theme reached it.
     std::fs::write(
-        dir.path().join("themes/big.toml"),
-        "type = \"widget_theme\"\n\n[panel]\npadding = 40\n",
+        dir.path().join("themes/big.eure"),
+        "type: widget_theme\n\n@ panel\npadding = 40\n",
     )
     .unwrap();
     let mut config = AppConfig::dev(dir.path().to_string_lossy().as_ref());
@@ -531,7 +531,7 @@ fn a_theme_is_inherited_by_everything_under_it() {
     let plain = add_widget(&app, &toml::toml! { kind = "panel" text = "p" }.into());
     let themed = add_widget(
         &app,
-        &toml::toml! { kind = "panel" text = "p" anchor = "bottom_left" theme = "themes/big.toml" }
+        &toml::toml! { kind = "panel" text = "p" anchor = "bottom_left" theme = "themes/big.eure" }
             .into(),
     );
     let ctx = egui::Context::default();
@@ -554,15 +554,15 @@ fn a_theme_is_inherited_by_everything_under_it() {
 fn a_kind_the_theme_does_not_mention_is_unchanged() {
     let dir = tempfile::tempdir().unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"t\"\nmain_scene = \"main.toml\"\n",
+        dir.path().join("project.eure"),
+        "name = \"t\"\nmain_scene = \"main.eure\"\n",
     )
     .unwrap();
-    std::fs::write(dir.path().join("main.toml"), "").unwrap();
+    std::fs::write(dir.path().join("main.eure"), "").unwrap();
     std::fs::create_dir_all(dir.path().join("themes")).unwrap();
     std::fs::write(
-        dir.path().join("themes/buttons.toml"),
-        "type = \"widget_theme\"\n\n[button]\nradius = 2\n",
+        dir.path().join("themes/buttons.eure"),
+        "type: widget_theme\n\n@ button\nradius = 2\n",
     )
     .unwrap();
     let mut config = AppConfig::dev(dir.path().to_string_lossy().as_ref());
@@ -572,7 +572,7 @@ fn a_kind_the_theme_does_not_mention_is_unchanged() {
     let plain = add_widget(&app, &toml::toml! { kind = "panel" text = "p" }.into());
     let themed = add_widget(
         &app,
-        &toml::toml! { kind = "panel" text = "p" anchor = "bottom_left" theme = "themes/buttons.toml" }
+        &toml::toml! { kind = "panel" text = "p" anchor = "bottom_left" theme = "themes/buttons.eure" }
             .into(),
     );
     let ctx = egui::Context::default();
@@ -600,19 +600,19 @@ fn a_kind_the_theme_does_not_mention_is_unchanged() {
 fn a_text_key_follows_the_locale() {
     let dir = tempfile::tempdir().unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"t\"\nmain_scene = \"main.toml\"\n",
+        dir.path().join("project.eure"),
+        "name = \"t\"\nmain_scene = \"main.eure\"\n",
     )
     .unwrap();
-    std::fs::write(dir.path().join("main.toml"), "").unwrap();
+    std::fs::write(dir.path().join("main.eure"), "").unwrap();
     std::fs::create_dir_all(dir.path().join("strings")).unwrap();
     std::fs::write(
-        dir.path().join("strings/en.toml"),
+        dir.path().join("strings/en.eure"),
         "\"menu.play\" = \"An English caption long enough to measure\"\n",
     )
     .unwrap();
     std::fs::write(
-        dir.path().join("strings/ro.toml"),
+        dir.path().join("strings/ro.eure"),
         "\"menu.play\" = \"Joaca\"\n",
     )
     .unwrap();

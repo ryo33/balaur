@@ -3,7 +3,7 @@
 //!
 //! Every clip here is either written inline on the component — the asset
 //! layer's "a table is a definition" rule — or addressed in
-//! `tests/fixtures/animations/hero.toml`, which is a real library file read
+//! `tests/fixtures/animations/hero.eure`, which is a real library file read
 //! off disk exactly as a shipped game reads one.
 
 use balaur_anim::{AnimationPlugin, AnimationState};
@@ -140,12 +140,13 @@ fn a_clip_that_does_not_loop_holds_its_last_key_and_stops() {
 fn autoplay_starts_the_named_clip_when_the_scene_loads() {
     let mut app = app();
     let source = r#"
-[[nodes]]
-name = "Box"
+@ nodes[] {
+  name: Box
 
-[nodes.animation]
-library = "animations/hero.toml"
-autoplay = "idle"
+  @ animation
+  library: animations/hero.eure
+  autoplay: idle
+}
 "#;
     let root = app.engine.root();
     project::instantiate_scene(&app.engine, source, root, false).unwrap();
@@ -164,12 +165,13 @@ fn a_saved_animation_node_no_longer_warns_that_nothing_handles_it() {
     balaur_core::logbuf::capture_for_test();
     let app = app();
     let source = r#"
-[[nodes]]
-name = "Box"
+@ nodes[] {
+  name: Box
 
-[nodes.animation]
-library = "animations/hero.toml"
-autoplay = "idle"
+  @ animation
+  library: animations/hero.eure
+  autoplay: idle
+}
 "#;
     let root = app.engine.root();
     project::instantiate_scene(&app.engine, source, root, false).unwrap();
@@ -266,7 +268,7 @@ fn the_speed_property_scales_playback() {
 #[test]
 fn a_library_file_addresses_its_clips_by_name() {
     let mut app = app();
-    let entity = animated(&app, "Hero", "library = \"animations/hero.toml\"");
+    let entity = animated(&app, "Hero", "library = \"animations/hero.eure\"");
 
     balaur_anim::play(&app.engine, entity, "idle").unwrap();
     tick(&mut app, 30);
@@ -287,10 +289,10 @@ fn a_library_file_addresses_its_clips_by_name() {
 #[test]
 fn a_clip_the_library_does_not_have_fails_with_the_reference_it_asked_for() {
     let app = app();
-    let entity = animated(&app, "Hero", "library = \"animations/hero.toml\"");
+    let entity = animated(&app, "Hero", "library = \"animations/hero.eure\"");
     let err = balaur_anim::play(&app.engine, entity, "sprint").unwrap_err();
     assert!(
-        format!("{err:#}").contains("animations/hero.toml#sprint"),
+        format!("{err:#}").contains("animations/hero.eure#sprint"),
         "unhelpful: {err:#}"
     );
 }
@@ -324,12 +326,12 @@ fn what_the_component_reports_back_is_what_the_scene_set() {
     let entity = animated(
         &app,
         "Hero",
-        "library = \"animations/hero.toml\"\nautoplay = \"idle\"\nspeed = 2.0\nroot = \"Rig\"",
+        "library = \"animations/hero.eure\"\nautoplay = \"idle\"\nspeed = 2.0\nroot = \"Rig\"",
     );
     let reported = components::get(&app.engine, entity, "animation").unwrap();
     assert_eq!(
         reported.get("library").and_then(toml::Value::as_str),
-        Some("animations/hero.toml")
+        Some("animations/hero.eure")
     );
     assert_eq!(
         reported.get("autoplay").and_then(toml::Value::as_str),

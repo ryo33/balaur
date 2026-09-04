@@ -16,22 +16,22 @@ use balaur_script::Value;
 const LIBRARY: &str = r#"
 type = "animation_clip"
 
-[clips.hop]
+@ clips.hop
 length = 0.5
 tracks = [
-  { property = "position", keys = [
-    { t = 0.0, value = [0.0, 0.0, 0.0] },
-    { t = 0.5, value = [0.0, 4.0, 0.0] },
+  { property => "position", keys => [
+    { t => 0.0, value => [0.0, 0.0, 0.0] },
+    { t => 0.5, value => [0.0, 4.0, 0.0] },
   ] },
 ]
 
-[clips.wave]
+@ clips.wave
 length = 1.0
 loop = "loop"
 tracks = [
-  { property = "position", keys = [
-    { t = 0.0, value = [1.0, 0.0, 0.0] },
-    { t = 1.0, value = [3.0, 0.0, 0.0] },
+  { property => "position", keys => [
+    { t => 0.0, value => [1.0, 0.0, 0.0] },
+    { t => 1.0, value => [3.0, 0.0, 0.0] },
   ] },
 ]
 "#;
@@ -57,12 +57,12 @@ pub fn on_animation_finished(this, name) {
 fn project(script: (&str, &str)) -> tempfile::TempDir {
     let dir = tempfile::tempdir().unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "[project]\nname = \"anim\"\n",
+        dir.path().join("project.eure"),
+        "name = \"anim\"\n",
     )
     .unwrap();
     std::fs::create_dir_all(dir.path().join("animations")).unwrap();
-    std::fs::write(dir.path().join("animations/hero.toml"), LIBRARY).unwrap();
+    std::fs::write(dir.path().join("animations/hero.eure"), LIBRARY).unwrap();
     std::fs::write(dir.path().join(script.0), script.1).unwrap();
     dir
 }
@@ -85,7 +85,7 @@ fn app_in(dir: &std::path::Path) -> App {
 fn hero(app: &App, script: &str) -> Entity {
     let root = app.engine.root();
     let entity = scene::spawn_node(&mut app.engine.world_mut(), "Hero", root);
-    let params: toml::Value = toml::from_str(r#"library = "animations/hero.toml""#).unwrap();
+    let params: toml::Value = toml::from_str(r#"library = "animations/hero.eure""#).unwrap();
     balaur_core::components::add(&app.engine, entity, "animation", Some(&params)).unwrap();
     app.engine
         .script_host()
