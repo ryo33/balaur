@@ -299,7 +299,7 @@ fn script_props_rows(S, k, node) {
     }
 }
 
-// Save as file promotes the inline definition to `animations/<node>.toml`,
+// Save as file promotes the inline definition to `animations/<node>.eure`,
 // Make inline copies a file back onto the node; neither touches the clip itself.
 fn clip_source_row(S, k, node) {
     let path = anim::library_path(node);
@@ -586,7 +586,7 @@ fn promote_asset(S, comp, prop, asset_type, dir, reference) {
         return;
     }
     definition["type"] = asset_type;
-    let rel = format!("{}/{}.toml", dir, node.name.to_lowercase());
+    let rel = format!("{}/{}.eure", dir, node.name.to_lowercase());
     let (written, err) = script::attempt(|| assets::save(S.game_root + "/" + rel, definition));
     if !written {
         log::warn(format!("cannot write {}: {:?}", rel, err));

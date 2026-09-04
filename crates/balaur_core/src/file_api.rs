@@ -128,6 +128,25 @@ pub(crate) fn toml_encode(_: &Engine, args: &[Value]) -> Result<Value> {
     )?)?))
 }
 
+pub(crate) fn eure_parse(_: &Engine, args: &[Value]) -> Result<Value> {
+    let parsed = eure::parse_content::<crate::eure_value::EureValue>(
+        text(args, 0)?,
+        std::path::PathBuf::from("<script>"),
+    )
+    .map_err(|err| anyhow!(err))?;
+    crate::node_api::from_eure(&parsed)
+}
+
+/// Goes through the same `toml::Value` tree `toml_encode` builds: there is no
+/// script-value-shaped Eure writer, only [`crate::node_api::toml_to_eure_text`]'s
+/// toml-tree one, which every other authoring-tool write already goes through.
+pub(crate) fn eure_encode(_: &Engine, args: &[Value]) -> Result<Value> {
+    let value = args.first().ok_or_else(|| anyhow!("nothing to encode"))?;
+    Ok(Value::Str(crate::node_api::toml_to_eure_text(
+        &crate::node_api::to_toml(value)?,
+    )))
+}
+
 pub(crate) fn json_parse(_: &Engine, args: &[Value]) -> Result<Value> {
     let parsed: serde_json::Value = serde_json::from_str(text(args, 0)?)?;
     from_json(&parsed)

@@ -13,8 +13,8 @@ use balaur_script::{Bindings as _, Value};
 
 use crate::engine::Engine;
 use crate::file_api::{
-    fs_exists, fs_list, fs_mkdir, fs_mtime, fs_read, fs_remove, fs_rename, fs_write, json_encode,
-    json_parse, toml_encode, toml_parse,
+    eure_encode, eure_parse, fs_exists, fs_list, fs_mkdir, fs_mtime, fs_read, fs_remove,
+    fs_rename, fs_write, json_encode, json_parse, toml_encode, toml_parse,
 };
 use crate::rng::Pcg32;
 use crate::scene;
@@ -334,6 +334,16 @@ pub const ENGINE_OPS: &[EngineOp] = &[
         call: toml_encode,
     },
     EngineOp {
+        module: "eure",
+        name: "parse",
+        call: eure_parse,
+    },
+    EngineOp {
+        module: "eure",
+        name: "encode",
+        call: eure_encode,
+    },
+    EngineOp {
         module: "json",
         name: "parse",
         call: json_parse,
@@ -401,6 +411,7 @@ fn document(module: &str, m: &mut dyn balaur_script::Bindings<Engine>) {
         "rng" => document_rng(m),
         "fs" => document_fs(m),
         "toml" => document_toml(m),
+        "eure" => document_eure(m),
         "json" => document_json(m),
         _ => {}
     }
@@ -433,8 +444,8 @@ fn document_scene(m: &mut dyn balaur_script::Bindings<Engine>) {
         ("root", &[], "()", "The tree's root node."),
         ("get_node", &[], "(path: string)", "The node at an `A/B/C` path from the root, where `..` climbs to the parent; nil when nothing matches."),
         ("spawn", &[], "(name: string, parent: node?)", "Create one empty named node under the given parent, or under the root when none is given."),
-        ("instantiate", &[], "(source: string, parent: node?, opts: any?)", "Build a scene document — TOML text, not a path — under a parent; `{ scripts: false }` leaves scripts unattached."),
-        ("source", &[], "(path: string)", "A scene file's raw TOML text, project-relative and found inside the pack in a packed run; nil when missing."),
+        ("instantiate", &[], "(source: string, parent: node?, opts: any?)", "Build a scene document — Eure text, not a path — under a parent; `{ scripts: false }` leaves scripts unattached."),
+        ("source", &[], "(path: string)", "A scene file's raw Eure text, project-relative and found inside the pack in a packed run; nil when missing."),
         ("component_types", &[], "()", "The names of every registered component type, not the components on any node."),
         ("component_tags", &[], "(name: string)", "The facets a component type is filed under, for filtering a palette; nil for a name nothing registered."),
         ("component_schema", &[], "(name: string)", "A component type's property schema as a table; nil for a name nothing registered."),
@@ -564,12 +575,24 @@ fn document_fs(m: &mut dyn balaur_script::Bindings<Engine>) {
 
 fn document_toml(m: &mut dyn balaur_script::Bindings<Engine>) {
     m.module_doc(
-        "TOML text to and from script tables: the format scene files, asset \
-         definitions and component properties are all written in.",
+        "TOML text to and from script tables, for a script's own data files. \
+         Scene files, asset definitions and project manifests are Eure — see \
+         the `eure` module — not TOML.",
     );
     m.describe(&[
         ("parse", &[], "(text: string)", "The table a TOML document describes; an error on text that does not parse."),
         ("encode", &[], "(value: any)", "A table written back out as TOML text; a node or callback in it is not data and is an error."),
+    ]);
+}
+
+fn document_eure(m: &mut dyn balaur_script::Bindings<Engine>) {
+    m.module_doc(
+        "Eure text to and from script tables: the format scene files, asset \
+         definitions and project manifests are all written in.",
+    );
+    m.describe(&[
+        ("parse", &[], "(text: string)", "The table an Eure document describes; an error on text that does not parse."),
+        ("encode", &[], "(value: any)", "A table written back out as Eure text; a node or callback in it is not data and is an error."),
     ]);
 }
 
@@ -706,7 +729,7 @@ fn instantiate(eng: &Engine, args: &[Value]) -> Result<Value> {
     Ok(Value::Nil)
 }
 
-/// The scene file's raw TOML text, or nil. Not a load: nothing is parsed or
+/// The scene file's raw Eure text, or nil. Not a load: nothing is parsed or
 /// spawned. Unlike `fs.read` it goes through the script host, so it finds the
 /// file inside the pack in a packed run.
 fn source(eng: &Engine, args: &[Value]) -> Result<Value> {

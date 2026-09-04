@@ -464,9 +464,9 @@ pub fn promote(S) {
         log::warn("this clip is already a file");
         return;
     }
-    let rel = "animations/" + node.name.to_lowercase() + ".toml";
+    let rel = "animations/" + node.name.to_lowercase() + ".eure";
     doc["type"] = CLIP_TYPE;
-    fs::write(engine_path(S, rel), toml::encode(doc));
+    fs::write(engine_path(S, rel), eure::encode(doc));
     script::attempt(|| assets::reload(engine_path(S, rel)));
     comp.library = rel;
     S.clip = None;
@@ -520,7 +520,7 @@ pub fn save(S) {
         return;
     }
     let path = clip.path.unwrap();
-    fs::write(engine_path(S, path), toml::encode(clip.doc.unwrap()));
+    fs::write(engine_path(S, path), eure::encode(clip.doc.unwrap()));
     script::attempt(|| assets::reload(engine_path(S, path)));
     clip.dirty = false;
     log::info("saved " + path);

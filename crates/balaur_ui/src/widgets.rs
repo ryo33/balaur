@@ -371,6 +371,7 @@ const RUNE: Syntax = Syntax {
         "node",
         "fs",
         "toml",
+        "eure",
         "this",
         "println",
     ],

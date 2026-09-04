@@ -110,6 +110,28 @@ fn json_round_trips_through_rune() {
 }
 
 #[test]
+fn eure_round_trips_through_rune() {
+    let dir = project(&[(
+        "e.rn",
+        r#"pub fn init(this) {
+            let doc = eure::parse("points = [1.5, 2.5]\n");
+            let again = eure::parse(eure::encode(doc));
+            this.out = again["points"][1];
+        }"#,
+    )]);
+    let app = app_in(dir.path());
+    let node = spawn(&app, "Parser");
+    let host = app.engine.script_host().unwrap();
+    host.attach(balaur_core::node_id_of(node), "e.rn").unwrap();
+
+    let rune = host
+        .as_any()
+        .downcast_ref::<balaur_script_rune::RuneHost>()
+        .unwrap();
+    assert_eq!(rune.number_field(node, "out"), Some(2.5));
+}
+
+#[test]
 fn a_script_calls_another_and_gets_the_return_value() {
     let dir = project(&[
         ("service.rn", "pub fn scaled(this, n) { n * 3 }\n"),

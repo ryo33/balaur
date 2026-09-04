@@ -1,4 +1,4 @@
-// The look lives in `themes/*.toml`, not here: colour tokens and the named
+// The look lives in `themes/*.eure`, not here: colour tokens and the named
 // roles a widget takes with `role:`. This module only loads one and applies it.
 
 use crate::util;
@@ -6,7 +6,7 @@ use crate::util;
 /// A theme asset, flattened into the shape `ui::set_theme` and every script's
 /// `k.<token>` lookup both want.
 pub fn load(name) {
-    let doc = toml::parse(fs::read("themes/" + name + ".toml"));
+    let doc = eure::parse(fs::read("themes/" + name + ".eure"));
     let t = #{ dark: doc.dark, roles: doc.roles };
     for (key, value) in doc.colors {
         t[key] = value;
