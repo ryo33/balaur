@@ -3,264 +3,233 @@
 type: editor_theme
 dark = true
 
-@ colors {
-  bg: #0b0e12
-  panel: #12161c
-  sunken: #080a0e
-  raised: #1a2028
-  line: #232a33
-  line_soft: #1a2028
-  text: #e6e9ee
-  dim: #98a3ae
-  faint: #6b7683
-  accent: #6fa4d8
-  accent_fill: #4287cc
-  accent_soft: #1a2c40
-  sage: #8fb8b0
-  sage_soft: #1f3230
-  grid: #151a21
-  grid_major: #232a33
-  code_bg: #0d1015
-  on_accent: #f6f8fb
-  k_key: #6fa4d8
-  k_str: #8fb8b0
-  k_num: #9fc2e5
-  k_com: #6b7683
-  k_fn: #e6e9ee
-  k_type: #b7d3cc
-  k_punc: #98a3ae
-  node_plain: #8b96a2
-  node_2d: #c9a86a
-  node_3d: #6fa4d8
-  node_ui: #a98fd0
-  node_phys: #8fb8b0
-  node_bone: #d08a5f
-}
+@ colors
+bg: #0b0e12
+panel: #12161c
+sunken: #080a0e
+raised: #1a2028
+line: #232a33
+line_soft: #1a2028
+text: #e6e9ee
+dim: #98a3ae
+faint: #6b7683
+accent: #6fa4d8
+accent_fill: #4287cc
+accent_soft: #1a2c40
+sage: #8fb8b0
+sage_soft: #1f3230
+grid: #151a21
+grid_major: #232a33
+code_bg: #0d1015
+on_accent: #f6f8fb
+k_key: #6fa4d8
+k_str: #8fb8b0
+k_num: #9fc2e5
+k_com: #6b7683
+k_fn: #e6e9ee
+k_type: #b7d3cc
+k_punc: #98a3ae
+node_plain: #8b96a2
+node_2d: #c9a86a
+node_3d: #6fa4d8
+node_ui: #a98fd0
+node_phys: #8fb8b0
+node_bone: #d08a5f
 
 // Text. A call site names one of these and says nothing else about type.
-@ roles.title {
-  font: heading
-  size = 16
-  strong = true
-  color: text
-}
+@ roles.title
+font: heading
+size = 16
+strong = true
+color: text
 
-@ roles.heading {
-  font: heading
-  size = 9.5
-  strong = true
-  color: dim
-}
+@ roles.heading
+font: heading
+size = 9.5
+strong = true
+color: dim
 
-@ roles.body {
-  font: ui
-  size = 11.5
-  color: text
-}
+@ roles.body
+font: ui
+size = 11.5
+color: text
 
-@ roles.label {
-  font: ui
-  size = 11
-  color: dim
-}
+@ roles.label
+font: ui
+size = 11
+color: dim
 
-@ roles.mono {
-  font: mono
-  size = 11.5
-  color: text
-}
+@ roles.mono
+font: mono
+size = 11.5
+color: text
 
-@ roles.value {
-  font: mono
-  size = 11
-  color: text
-}
+@ roles.value
+font: mono
+size = 11
+color: text
 
-@ roles.meta {
-  font: mono
-  size = 10.5
-  color: faint
-}
+@ roles.meta
+font: mono
+size = 10.5
+color: faint
 
-@ roles.code {
-  font: mono
-  size = 12.5
-  color: text
-}
+@ roles.code
+font: mono
+size = 12.5
+color: text
 
 // Shapes. Radii are tiles; `round = true` is the exception, not the rule.
-@ roles.sheet {
-  radius = 8
-  fill: panel
-}
+@ roles.sheet
+radius = 8
+fill: panel
 
-@ roles.row {
-  height = 23
-  radius = 5
-  size = 11.5
-  align: left
-  color: text
-  hover_fill: raised
-  font: mono
-}
+@ roles.row
+height = 23
+radius = 5
+size = 11.5
+align: left
+color: text
+hover_fill: raised
+font: mono
 
-@ roles.row_on {
-  height = 23
-  radius = 5
-  size = 11.5
-  align: left
-  fill: accent_fill
-  color: on_accent
-  font: mono
-}
+@ roles.row_on
+height = 23
+radius = 5
+size = 11.5
+align: left
+fill: accent_fill
+color: on_accent
+font: mono
 
-@ roles.list_item {
-  height = 25
-  radius = 5
-  size = 11.5
-  align: left
-  fill: sunken
-  color: text
-}
+@ roles.list_item
+height = 25
+radius = 5
+size = 11.5
+align: left
+fill: sunken
+color: text
 
-@ roles.tab {
-  height = 22
-  radius = 5
-  size = 11
-  strong = true
-  color: faint
-}
+@ roles.tab
+height = 22
+radius = 5
+size = 11
+strong = true
+color: faint
 
-@ roles.tab_on {
-  height = 22
-  radius = 5
-  size = 11
-  strong = true
-  fill: accent_soft
-  color: accent
-}
+@ roles.tab_on
+height = 22
+radius = 5
+size = 11
+strong = true
+fill: accent_soft
+color: accent
 
-@ roles.navtab {
-  height = 26
-  radius = 5
-  size = 12
-  color: faint
-}
+@ roles.navtab
+height = 26
+radius = 5
+size = 12
+color: faint
 
-@ roles.navtab_on {
-  height = 26
-  radius = 5
-  size = 12
-  fill: accent_soft
-  color: accent
-}
+@ roles.navtab_on
+height = 26
+radius = 5
+size = 12
+fill: accent_soft
+color: accent
 
-@ roles.field {
-  height = 22
-  radius = 5
-  size = 11
-  font: mono
-  fill: sunken
-  color: text
-}
+@ roles.field
+height = 22
+radius = 5
+size = 11
+font: mono
+fill: sunken
+color: text
 
-@ roles.chip {
-  height = 22
-  radius = 6
-  size = 10.5
-  strong = true
-  fill: sunken
-  color: dim
-}
+@ roles.chip
+height = 22
+radius = 6
+size = 10.5
+strong = true
+fill: sunken
+color: dim
 
-@ roles.chip_on {
-  height = 22
-  radius = 6
-  size = 10.5
-  strong = true
-  fill: accent_soft
-  color: accent
-}
+@ roles.chip_on
+height = 22
+radius = 6
+size = 10.5
+strong = true
+fill: accent_soft
+color: accent
 
-@ roles.button {
-  height = 28
-  radius = 5
-  size = 12
-  font: ui
-  strong = true
-  fill: sunken
-  color: accent
-}
+@ roles.button
+height = 28
+radius = 5
+size = 12
+font: ui
+strong = true
+fill: sunken
+color: accent
 
-@ roles.icon_button {
-  height = 21
-  radius = 4
-  size = 12
-  color: dim
-}
+@ roles.icon_button
+height = 21
+radius = 4
+size = 12
+color: dim
 
-@ roles.tool {
-  d = 28
-  size = 13
-  color: dim
-}
+@ roles.tool
+d = 28
+size = 13
+color: dim
 
-@ roles.tool_on {
-  d = 28
-  size = 13
-  fill: accent_soft
-  color: accent
-}
+@ roles.tool_on
+d = 28
+size = 13
+fill: accent_soft
+color: accent
 
-@ roles.transport {
-  d = 28
-  size = 13
-  round = true
-  color: dim
-}
+@ roles.transport
+d = 28
+size = 13
+round = true
+color: dim
 
-@ roles.transport_on {
-  d = 28
-  size = 13
-  round = true
-  fill: accent_fill
-  color: on_accent
-}
+@ roles.transport_on
+d = 28
+size = 13
+round = true
+fill: accent_fill
+color: on_accent
 
-@ roles.chip_quiet {
-  height = 22
-  radius = 6
-  size = 10.5
-  strong = true
-  color: faint
-}
+@ roles.chip_quiet
+height = 22
+radius = 6
+size = 10.5
+strong = true
+color: faint
 
-@ roles.chip_on_quiet {
-  height = 22
-  radius = 6
-  size = 10.5
-  strong = true
-  color: dim
-}
+@ roles.chip_on_quiet
+height = 22
+radius = 6
+size = 10.5
+strong = true
+color: dim
 
-@ roles.toggle {
-  height = 17
-}
+@ roles.toggle
+height = 17
 
-@ roles.row_action {
-  height = 20
-  radius = 4
-  size = 10
-  strong = true
-  fill: sunken
-  color: dim
-}
+@ roles.row_action
+height = 20
+radius = 4
+size = 10
+strong = true
+fill: sunken
+color: dim
 
-@ roles.row_action_on {
-  height = 20
-  radius = 4
-  size = 10
-  strong = true
-  fill: accent_soft
-  color: accent
-}
+@ roles.row_action_on
+height = 20
+radius = 4
+size = 10
+strong = true
+fill: accent_soft
+color: accent

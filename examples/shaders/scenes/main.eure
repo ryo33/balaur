@@ -8,10 +8,9 @@
   parent = ""
   position = [0, 0, 0]
 
-  camera {
-    kind: 2d
-    zoom = 90
-  }
+  @ camera
+  kind: 2d
+  zoom = 90
 }
 
 @ nodes[] {
@@ -20,11 +19,10 @@
   parent = ""
   position = [-2.2, 0, 0]
 
-  sprite {
-    texture: art/logo.png
-    material: materials/glow.eure
-    pixels_per_unit = 128
-  }
+  @ sprite
+  texture: art/logo.png
+  material: materials/glow.eure
+  pixels_per_unit = 128
 }
 
 @ nodes[] {
@@ -33,10 +31,9 @@
   parent = ""
   position = [2.2, 0, 0]
 
-  sprite {
-    texture: art/logo.png
-    pixels_per_unit = 128
-  }
+  @ sprite
+  texture: art/logo.png
+  pixels_per_unit = 128
 }
 
 @ nodes[] {
@@ -44,13 +41,12 @@
   name: Hud
   parent = ""
 
-  widget {
-    kind: label
-    text: shaders · balaur
-    anchor: top_left
-    x = 16
-    y = 16
-    font_size = 16
-    text_color: #f9f4ed
-  }
+  @ widget
+  kind: label
+  text: shaders · balaur
+  anchor: top_left
+  x = 16
+  y = 16
+  font_size = 16
+  text_color: #f9f4ed
 }

@@ -6,10 +6,9 @@
   name: Column
   parent = ""
 
-  animation {
-    autoplay: sway
-    library: animations/column.eure
-  }
+  @ animation
+  autoplay: sway
+  library: animations/column.eure
 }
 
 @ nodes[] {
@@ -20,11 +19,10 @@
   rotation_euler = [0.0, 0.0, 0.0]
   scale = [1.0, 1.0, 1.0]
 
-  bone3d {
-    rest_position = [0.0, 0.0, 0.0]
-    rest_rotation = [0.0, 0.0, 0.0]
-    rest_scale = [1.0, 1.0, 1.0]
-  }
+  @ bone3d
+  rest_position = [0.0, 0.0, 0.0]
+  rest_rotation = [0.0, 0.0, 0.0]
+  rest_scale = [1.0, 1.0, 1.0]
 }
 
 @ nodes[] {
@@ -35,11 +33,10 @@
   rotation_euler = [0.0, 0.0, 0.0]
   scale = [1.0, 1.0, 1.0]
 
-  bone3d {
-    rest_position = [0.0, 1.0, 0.0]
-    rest_rotation = [0.0, 0.0, 0.0]
-    rest_scale = [1.0, 1.0, 1.0]
-  }
+  @ bone3d
+  rest_position = [0.0, 1.0, 0.0]
+  rest_rotation = [0.0, 0.0, 0.0]
+  rest_scale = [1.0, 1.0, 1.0]
 }
 
 @ nodes[] {
@@ -50,11 +47,10 @@
   rotation_euler = [0.0, 0.0, 0.0]
   scale = [1.0, 1.0, 1.0]
 
-  bone3d {
-    rest_position = [0.0, 1.0, 0.0]
-    rest_rotation = [0.0, 0.0, 0.0]
-    rest_scale = [1.0, 1.0, 1.0]
-  }
+  @ bone3d
+  rest_position = [0.0, 1.0, 0.0]
+  rest_rotation = [0.0, 0.0, 0.0]
+  rest_scale = [1.0, 1.0, 1.0]
 }
 
 @ nodes[] {
@@ -62,12 +58,11 @@
   name: ColumnMesh
   parent: n_column
 
-  mesh {
+  @ mesh {
     skeleton: ../Root
 
-    source {
-      source: models/column.glb
-    }
+    @ source
+    source: models/column.glb
   }
 }
 
@@ -77,10 +72,9 @@
   parent = ""
   position = [4.0, 3.2, 5.5]
 
-  camera {
-    kind: 3d
-    look_at = [0.0, 1.5, 0.0]
-  }
+  @ camera
+  kind: 3d
+  look_at = [0.0, 1.5, 0.0]
 }
 
 @ nodes[] {
@@ -89,9 +83,8 @@
   parent = ""
   position = [0.0, 0.0, 0.0]
 
-  shape3d {
-    kind: plane
-    half_extents = [4.0, 0.0, 4.0]
-    color = [0.3, 0.42, 0.3, 1.0]
-  }
+  @ shape3d
+  kind: plane
+  half_extents = [4.0, 0.0, 4.0]
+  color = [0.3, 0.42, 0.3, 1.0]
 }

@@ -1,27 +1,25 @@
 // An angry-birds game. The level is pure scene data, editable in the balaur
 // editor; scripts/game.rn drives the slingshot, scoring and restarts.
 
-@ nodes[] {
-  id: n_game
-  name: Game
-  parent = ""
-  script: scripts/game.rn
-}
+@ nodes[]
+id: n_game
+name: Game
+parent = ""
+script: scripts/game.rn
 
 @ nodes[] {
   id: n_score
   name: Score
   parent = ""
 
-  widget {
-    kind: label
-    text: Score 0
-    anchor: top_left
-    x = 20
-    y = 16
-    font_size = 22
-    text_color: #2b2b2b
-  }
+  @ widget
+  kind: label
+  text: Score 0
+  anchor: top_left
+  x = 20
+  y = 16
+  font_size = 22
+  text_color: #2b2b2b
 }
 
 @ nodes[] {
@@ -29,15 +27,14 @@
   name: Birds
   parent = ""
 
-  widget {
-    kind: label
-    text: Birds 3
-    anchor: top_right
-    x = 20
-    y = 16
-    font_size = 22
-    text_color: #2b2b2b
-  }
+  @ widget
+  kind: label
+  text: Birds 3
+  anchor: top_right
+  x = 20
+  y = 16
+  font_size = 22
+  text_color: #2b2b2b
 }
 
 @ nodes[] {
@@ -45,15 +42,14 @@
   name: Hint
   parent = ""
 
-  widget {
-    kind: label
-    text: Drag the bird, release to launch · R restarts
-    anchor: bottom_left
-    x = 20
-    y = 14
-    font_size = 15
-    text_color: #4b4b4b
-  }
+  @ widget
+  kind: label
+  text: Drag the bird, release to launch · R restarts
+  anchor: bottom_left
+  x = 20
+  y = 14
+  font_size = 15
+  text_color: #4b4b4b
 }
 
 @ nodes[] {
@@ -63,17 +59,15 @@
   position = [0, -0.5, 0]
   body2d: static
 
-  shape2d {
-    kind: rect
-    half_extents = [14, 0.5]
-    color = [0.45, 0.63, 0.35, 1.0]
-  }
+  @ shape2d
+  kind: rect
+  half_extents = [14, 0.5]
+  color = [0.45, 0.63, 0.35, 1.0]
 
-  collider2d {
-    kind: rect
-    half_extents = [14, 0.5]
-    friction = 0.9
-  }
+  @ collider2d
+  kind: rect
+  half_extents = [14, 0.5]
+  friction = 0.9
 }
 
 @ nodes[] {
@@ -82,11 +76,10 @@
   parent = ""
   position = [-8, 0.9, 0]
 
-  shape2d {
-    kind: rect
-    half_extents = [0.12, 0.9]
-    color = [0.42, 0.28, 0.16, 1.0]
-  }
+  @ shape2d
+  kind: rect
+  half_extents = [0.12, 0.9]
+  color = [0.42, 0.28, 0.16, 1.0]
 }
 
 @ nodes[] {
@@ -96,19 +89,17 @@
   position = [-8, 2.2, 0]
   body2d: kinematic
 
-  shape2d {
-    kind: circle
-    radius = 0.4
-    color = [0.85, 0.2, 0.18, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.4
+  color = [0.85, 0.2, 0.18, 1.0]
 
-  collider2d {
-    kind: circle
-    radius = 0.4
-    restitution = 0.3
-    friction = 0.7
-    density = 2.5
-  }
+  @ collider2d
+  kind: circle
+  radius = 0.4
+  restitution = 0.3
+  friction = 0.7
+  density = 2.5
 }
 
 @ nodes[] {
@@ -118,17 +109,15 @@
   position = [6, 1.0, 0]
   body2d: dynamic
 
-  shape2d {
-    kind: rect
-    half_extents = [0.16, 1.0]
-    color = [0.74, 0.57, 0.32, 1.0]
-  }
+  @ shape2d
+  kind: rect
+  half_extents = [0.16, 1.0]
+  color = [0.74, 0.57, 0.32, 1.0]
 
-  collider2d {
-    kind: rect
-    half_extents = [0.16, 1.0]
-    friction = 0.7
-  }
+  @ collider2d
+  kind: rect
+  half_extents = [0.16, 1.0]
+  friction = 0.7
 }
 
 @ nodes[] {
@@ -138,17 +127,15 @@
   position = [8, 1.0, 0]
   body2d: dynamic
 
-  shape2d {
-    kind: rect
-    half_extents = [0.16, 1.0]
-    color = [0.74, 0.57, 0.32, 1.0]
-  }
+  @ shape2d
+  kind: rect
+  half_extents = [0.16, 1.0]
+  color = [0.74, 0.57, 0.32, 1.0]
 
-  collider2d {
-    kind: rect
-    half_extents = [0.16, 1.0]
-    friction = 0.7
-  }
+  @ collider2d
+  kind: rect
+  half_extents = [0.16, 1.0]
+  friction = 0.7
 }
 
 @ nodes[] {
@@ -158,17 +145,15 @@
   position = [7, 2.16, 0]
   body2d: dynamic
 
-  shape2d {
-    kind: rect
-    half_extents = [1.3, 0.14]
-    color = [0.68, 0.5, 0.28, 1.0]
-  }
+  @ shape2d
+  kind: rect
+  half_extents = [1.3, 0.14]
+  color = [0.68, 0.5, 0.28, 1.0]
 
-  collider2d {
-    kind: rect
-    half_extents = [1.3, 0.14]
-    friction = 0.7
-  }
+  @ collider2d
+  kind: rect
+  half_extents = [1.3, 0.14]
+  friction = 0.7
 }
 
 @ nodes[] {
@@ -178,17 +163,15 @@
   position = [6.4, 3.1, 0]
   body2d: dynamic
 
-  shape2d {
-    kind: rect
-    half_extents = [0.15, 0.8]
-    color = [0.74, 0.57, 0.32, 1.0]
-  }
+  @ shape2d
+  kind: rect
+  half_extents = [0.15, 0.8]
+  color = [0.74, 0.57, 0.32, 1.0]
 
-  collider2d {
-    kind: rect
-    half_extents = [0.15, 0.8]
-    friction = 0.7
-  }
+  @ collider2d
+  kind: rect
+  half_extents = [0.15, 0.8]
+  friction = 0.7
 }
 
 @ nodes[] {
@@ -198,17 +181,15 @@
   position = [7.6, 3.1, 0]
   body2d: dynamic
 
-  shape2d {
-    kind: rect
-    half_extents = [0.15, 0.8]
-    color = [0.74, 0.57, 0.32, 1.0]
-  }
+  @ shape2d
+  kind: rect
+  half_extents = [0.15, 0.8]
+  color = [0.74, 0.57, 0.32, 1.0]
 
-  collider2d {
-    kind: rect
-    half_extents = [0.15, 0.8]
-    friction = 0.7
-  }
+  @ collider2d
+  kind: rect
+  half_extents = [0.15, 0.8]
+  friction = 0.7
 }
 
 @ nodes[] {
@@ -218,17 +199,15 @@
   position = [7, 4.04, 0]
   body2d: dynamic
 
-  shape2d {
-    kind: rect
-    half_extents = [0.9, 0.14]
-    color = [0.68, 0.5, 0.28, 1.0]
-  }
+  @ shape2d
+  kind: rect
+  half_extents = [0.9, 0.14]
+  color = [0.68, 0.5, 0.28, 1.0]
 
-  collider2d {
-    kind: rect
-    half_extents = [0.9, 0.14]
-    friction = 0.7
-  }
+  @ collider2d
+  kind: rect
+  half_extents = [0.9, 0.14]
+  friction = 0.7
 }
 
 @ nodes[] {
@@ -238,18 +217,16 @@
   position = [7, 0.45, 0]
   body2d: dynamic
 
-  shape2d {
-    kind: circle
-    radius = 0.45
-    color = [0.36, 0.72, 0.25, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.45
+  color = [0.36, 0.72, 0.25, 1.0]
 
-  collider2d {
-    kind: circle
-    radius = 0.45
-    restitution = 0.2
-    friction = 0.6
-  }
+  @ collider2d
+  kind: circle
+  radius = 0.45
+  restitution = 0.2
+  friction = 0.6
 }
 
 @ nodes[] {
@@ -258,11 +235,10 @@
   parent: n_pig1
   position = [-0.18, 0.072, 0.01]
 
-  shape2d {
-    kind: circle
-    radius = 0.189
-    color = [0.16, 0.13, 0.11, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.189
+  color = [0.16, 0.13, 0.11, 1.0]
 }
 
 @ nodes[] {
@@ -271,11 +247,10 @@
   parent: n_pig1
   position = [0.18, 0.072, 0.01]
 
-  shape2d {
-    kind: circle
-    radius = 0.189
-    color = [0.16, 0.13, 0.11, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.189
+  color = [0.16, 0.13, 0.11, 1.0]
 }
 
 @ nodes[] {
@@ -284,11 +259,10 @@
   parent: n_pig1
   position = [0, 0.072, 0.01]
 
-  shape2d {
-    kind: rect
-    half_extents = [0.05, 0.016]
-    color = [0.16, 0.13, 0.11, 1.0]
-  }
+  @ shape2d
+  kind: rect
+  half_extents = [0.05, 0.016]
+  color = [0.16, 0.13, 0.11, 1.0]
 }
 
 @ nodes[] {
@@ -297,11 +271,10 @@
   parent: n_pig1
   position = [-0.18, 0.072, 0.02]
 
-  shape2d {
-    kind: circle
-    radius = 0.135
-    color = [0.96, 0.96, 0.93, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.135
+  color = [0.96, 0.96, 0.93, 1.0]
 }
 
 @ nodes[] {
@@ -310,11 +283,10 @@
   parent: n_pig1
   position = [0.18, 0.072, 0.02]
 
-  shape2d {
-    kind: circle
-    radius = 0.135
-    color = [0.96, 0.96, 0.93, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.135
+  color = [0.96, 0.96, 0.93, 1.0]
 }
 
 @ nodes[] {
@@ -323,11 +295,10 @@
   parent: n_pig1
   position = [-0.18, 0.072, 0.03]
 
-  shape2d {
-    kind: circle
-    radius = 0.05
-    color = [0.1, 0.1, 0.12, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.05
+  color = [0.1, 0.1, 0.12, 1.0]
 }
 
 @ nodes[] {
@@ -336,11 +307,10 @@
   parent: n_pig1
   position = [0.18, 0.072, 0.03]
 
-  shape2d {
-    kind: circle
-    radius = 0.05
-    color = [0.1, 0.1, 0.12, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.05
+  color = [0.1, 0.1, 0.12, 1.0]
 }
 
 @ nodes[] {
@@ -350,18 +320,16 @@
   position = [7, 2.72, 0]
   body2d: dynamic
 
-  shape2d {
-    kind: circle
-    radius = 0.4
-    color = [0.36, 0.72, 0.25, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.4
+  color = [0.36, 0.72, 0.25, 1.0]
 
-  collider2d {
-    kind: circle
-    radius = 0.4
-    restitution = 0.2
-    friction = 0.6
-  }
+  @ collider2d
+  kind: circle
+  radius = 0.4
+  restitution = 0.2
+  friction = 0.6
 }
 
 @ nodes[] {
@@ -370,11 +338,10 @@
   parent: n_pig2
   position = [-0.16, 0.064, 0.01]
 
-  shape2d {
-    kind: circle
-    radius = 0.168
-    color = [0.16, 0.13, 0.11, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.168
+  color = [0.16, 0.13, 0.11, 1.0]
 }
 
 @ nodes[] {
@@ -383,11 +350,10 @@
   parent: n_pig2
   position = [0.16, 0.064, 0.01]
 
-  shape2d {
-    kind: circle
-    radius = 0.168
-    color = [0.16, 0.13, 0.11, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.168
+  color = [0.16, 0.13, 0.11, 1.0]
 }
 
 @ nodes[] {
@@ -396,11 +362,10 @@
   parent: n_pig2
   position = [0, 0.064, 0.01]
 
-  shape2d {
-    kind: rect
-    half_extents = [0.044, 0.014]
-    color = [0.16, 0.13, 0.11, 1.0]
-  }
+  @ shape2d
+  kind: rect
+  half_extents = [0.044, 0.014]
+  color = [0.16, 0.13, 0.11, 1.0]
 }
 
 @ nodes[] {
@@ -409,11 +374,10 @@
   parent: n_pig2
   position = [-0.16, 0.064, 0.02]
 
-  shape2d {
-    kind: circle
-    radius = 0.12
-    color = [0.96, 0.96, 0.93, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.12
+  color = [0.96, 0.96, 0.93, 1.0]
 }
 
 @ nodes[] {
@@ -422,11 +386,10 @@
   parent: n_pig2
   position = [0.16, 0.064, 0.02]
 
-  shape2d {
-    kind: circle
-    radius = 0.12
-    color = [0.96, 0.96, 0.93, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.12
+  color = [0.96, 0.96, 0.93, 1.0]
 }
 
 @ nodes[] {
@@ -435,11 +398,10 @@
   parent: n_pig2
   position = [-0.16, 0.064, 0.03]
 
-  shape2d {
-    kind: circle
-    radius = 0.044
-    color = [0.1, 0.1, 0.12, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.044
+  color = [0.1, 0.1, 0.12, 1.0]
 }
 
 @ nodes[] {
@@ -448,11 +410,10 @@
   parent: n_pig2
   position = [0.16, 0.064, 0.03]
 
-  shape2d {
-    kind: circle
-    radius = 0.044
-    color = [0.1, 0.1, 0.12, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.044
+  color = [0.1, 0.1, 0.12, 1.0]
 }
 
 @ nodes[] {
@@ -462,18 +423,16 @@
   position = [7, 4.55, 0]
   body2d: dynamic
 
-  shape2d {
-    kind: circle
-    radius = 0.36
-    color = [0.36, 0.72, 0.25, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.36
+  color = [0.36, 0.72, 0.25, 1.0]
 
-  collider2d {
-    kind: circle
-    radius = 0.36
-    restitution = 0.2
-    friction = 0.6
-  }
+  @ collider2d
+  kind: circle
+  radius = 0.36
+  restitution = 0.2
+  friction = 0.6
 }
 
 @ nodes[] {
@@ -482,11 +441,10 @@
   parent: n_pig3
   position = [-0.144, 0.058, 0.01]
 
-  shape2d {
-    kind: circle
-    radius = 0.151
-    color = [0.16, 0.13, 0.11, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.151
+  color = [0.16, 0.13, 0.11, 1.0]
 }
 
 @ nodes[] {
@@ -495,11 +453,10 @@
   parent: n_pig3
   position = [0.144, 0.058, 0.01]
 
-  shape2d {
-    kind: circle
-    radius = 0.151
-    color = [0.16, 0.13, 0.11, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.151
+  color = [0.16, 0.13, 0.11, 1.0]
 }
 
 @ nodes[] {
@@ -508,11 +465,10 @@
   parent: n_pig3
   position = [0, 0.058, 0.01]
 
-  shape2d {
-    kind: rect
-    half_extents = [0.04, 0.013]
-    color = [0.16, 0.13, 0.11, 1.0]
-  }
+  @ shape2d
+  kind: rect
+  half_extents = [0.04, 0.013]
+  color = [0.16, 0.13, 0.11, 1.0]
 }
 
 @ nodes[] {
@@ -521,11 +477,10 @@
   parent: n_pig3
   position = [-0.144, 0.058, 0.02]
 
-  shape2d {
-    kind: circle
-    radius = 0.108
-    color = [0.96, 0.96, 0.93, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.108
+  color = [0.96, 0.96, 0.93, 1.0]
 }
 
 @ nodes[] {
@@ -534,11 +489,10 @@
   parent: n_pig3
   position = [0.144, 0.058, 0.02]
 
-  shape2d {
-    kind: circle
-    radius = 0.108
-    color = [0.96, 0.96, 0.93, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.108
+  color = [0.96, 0.96, 0.93, 1.0]
 }
 
 @ nodes[] {
@@ -547,11 +501,10 @@
   parent: n_pig3
   position = [-0.144, 0.058, 0.03]
 
-  shape2d {
-    kind: circle
-    radius = 0.04
-    color = [0.1, 0.1, 0.12, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.04
+  color = [0.1, 0.1, 0.12, 1.0]
 }
 
 @ nodes[] {
@@ -560,11 +513,10 @@
   parent: n_pig3
   position = [0.144, 0.058, 0.03]
 
-  shape2d {
-    kind: circle
-    radius = 0.04
-    color = [0.1, 0.1, 0.12, 1.0]
-  }
+  @ shape2d
+  kind: circle
+  radius = 0.04
+  color = [0.1, 0.1, 0.12, 1.0]
 }
 
 @ nodes[] {
@@ -573,14 +525,13 @@
   parent = ""
   script: scripts/restart_button.rn
 
-  widget {
-    kind: button
-    text: Restart
-    anchor: bottom_right
-    x = 20
-    y = 14
-    font_size = 15
-    text_color: #2b2b2b
-    on_click: on_restart
-  }
+  @ widget
+  kind: button
+  text: Restart
+  anchor: bottom_right
+  x = 20
+  y = 14
+  font_size = 15
+  text_color: #2b2b2b
+  on_click: on_restart
 }
