@@ -38,13 +38,13 @@ fn run_until(source: &str, markers: &[&str]) {
     let dir = tempfile::tempdir().unwrap();
     std::fs::create_dir_all(dir.path().join("scripts")).unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"n\"\nmain_scene = \"main.toml\"\n",
+        dir.path().join("project.eure"),
+        "name = \"n\"\nmain_scene = \"main.eure\"\n",
     )
     .unwrap();
     std::fs::write(
-        dir.path().join("main.toml"),
-        "[[nodes]]\nid = \"n\"\nname = \"Node\"\nscript = \"scripts/s.rn\"\n",
+        dir.path().join("main.eure"),
+        "@ nodes[]\nid: n\nname: Node\nscript: scripts/s.rn\n",
     )
     .unwrap();
     std::fs::write(dir.path().join("scripts/s.rn"), source).unwrap();

@@ -74,18 +74,23 @@ pub struct HttpCall {
     pub timeout: Option<f64>,
 }
 
-/// Project-wide defaults, the `[http]` table of `project.toml`:
+/// Project-wide defaults, the `@ http` section of `project.eure`:
 ///
-/// ```toml
-/// [http]
-/// timeout = 10.0   # seconds, when a request names none
+/// ```text
+/// @ http
+/// timeout = 10.0   // seconds, when a request names none
 /// ```
 ///
 /// A call's own options override these.
-#[derive(Clone, Debug, serde::Deserialize)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Clone, Debug, eure::FromEure)]
+#[eure(crate = ::eure::document)]
 pub struct HttpConfig {
+    #[eure(default = "default_timeout")]
     pub timeout: f64,
+}
+
+fn default_timeout() -> f64 {
+    10.0
 }
 
 impl Default for HttpConfig {
@@ -95,23 +100,26 @@ impl Default for HttpConfig {
 }
 
 impl HttpConfig {
-    /// The `[http]` table of the project's manifest, or the defaults when the
-    /// file or the table is missing. A table that does not parse is reported
-    /// and ignored rather than failing the boot over a networking setting.
+    /// The `@ http` section of the project's manifest, or the defaults when
+    /// the file or the section is missing. A section that does not parse is
+    /// reported and ignored rather than failing the boot over a networking
+    /// setting.
     #[must_use]
     pub fn load(files: &balaur_core::project::ProjectFiles) -> Self {
-        #[derive(serde::Deserialize)]
+        #[derive(eure::FromEure)]
+        #[eure(crate = ::eure::document, allow_unknown_fields)]
         struct Manifest {
-            #[serde(default)]
+            #[eure(default)]
             http: HttpConfig,
         }
-        let Ok(bytes) = files.read("project.toml") else {
+        let Ok(bytes) = files.read("project.eure") else {
             return Self::default();
         };
-        match toml::from_str::<Manifest>(&String::from_utf8_lossy(&bytes)) {
+        let source = String::from_utf8_lossy(&bytes);
+        match eure::parse_content::<Manifest>(&source, std::path::PathBuf::from("project.eure")) {
             Ok(manifest) => manifest.http,
             Err(err) => {
-                tracing::warn!("project.toml [http]: {err}; using the defaults");
+                tracing::warn!("project.eure [http]: {err}; using the defaults");
                 Self::default()
             }
         }
