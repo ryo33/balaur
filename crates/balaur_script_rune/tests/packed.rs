@@ -15,7 +15,7 @@ fn private_ritual(n) { n + 1 }\n";
 
 fn project() -> tempfile::TempDir {
     let dir = tempfile::tempdir().unwrap();
-    std::fs::write(dir.path().join("project.toml"), "[project]\nname = \"t\"\n").unwrap();
+    std::fs::write(dir.path().join("project.eure"), "name = \"t\"\n").unwrap();
     std::fs::write(dir.path().join("s.rn"), SOURCE).unwrap();
     dir
 }

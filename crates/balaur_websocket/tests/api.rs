@@ -350,8 +350,8 @@ fn a_websocket_sends_plain_frames_when_compression_is_off() {
 fn the_websocket_table_of_the_manifest_sets_the_defaults() {
     let dir = tempfile::tempdir().unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"t\"\nmain_scene = \"scenes/main.toml\"\n\n[websocket]\ncompression = false\n",
+        dir.path().join("project.eure"),
+        "name = \"t\"\nmain_scene = \"scenes/main.eure\"\n\n@ websocket\ncompression = false\n",
     )
     .unwrap();
     let app = app_with_websocket(dir.path());

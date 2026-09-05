@@ -51,15 +51,15 @@ impl Project {
     pub fn new(backend: Backend, source: &str) -> Result<Self> {
         let dir = tempfile::tempdir()?;
         std::fs::write(
-            dir.path().join("project.toml"),
+            dir.path().join("project.eure"),
             format!(
-                "name = \"bench\"\nmain_scene = \"main.toml\"\nlanguage = \"{}\"\n",
+                "name = \"bench\"\nmain_scene = \"main.eure\"\nlanguage = \"{}\"\n",
                 backend.name()
             ),
         )?;
         std::fs::write(
-            dir.path().join("main.toml"),
-            "[[nodes]]\nid = \"n\"\nname = \"Root\"\n",
+            dir.path().join("main.eure"),
+            "@ nodes[]\nid: n\nname: Root\n",
         )?;
         std::fs::write(
             dir.path().join(format!("s.{}", backend.extension())),

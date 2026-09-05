@@ -65,12 +65,12 @@ modules! {
     websocket = "websocket" => balaur_websocket::WebsocketPlugin,
 }
 
-/// The script backend a project asks for in its `project.toml`. Rune is the
+/// The script backend a project asks for in its `project.eure`. Rune is the
 /// one language this build ships; the field stays so a project states it.
 fn backend_for(config: &AppConfig) -> Result<balaur_core::ScriptHostFactory> {
     let manifest = match &config.pack {
         Some(pack) => Some(pack.manifest.clone()),
-        None => std::fs::read_to_string(config.project_root.join("project.toml")).ok(),
+        None => std::fs::read_to_string(config.project_root.join("project.eure")).ok(),
     };
     let language = manifest
         .as_deref()
@@ -79,7 +79,7 @@ fn backend_for(config: &AppConfig) -> Result<balaur_core::ScriptHostFactory> {
     match language.as_str() {
         "rune" => Ok(balaur_script_rune::factory()),
         other => Err(anyhow::anyhow!(
-            "project.toml asks for language \"{other}\"; this build has rune"
+            "project.eure asks for language \"{other}\"; this build has rune"
         )),
     }
 }
@@ -163,27 +163,28 @@ pub fn scene_scripts(project_root: &std::path::Path) -> Vec<String> {
                 dirs.push(path);
                 continue;
             }
-            if path.extension().and_then(|e| e.to_str()) != Some("toml") {
+            if path.extension().and_then(|e| e.to_str()) != Some("eure") {
                 continue;
             }
             let Ok(text) = std::fs::read_to_string(&path) else {
                 continue;
             };
-            let Ok(document) = text.parse::<toml::Table>() else {
+            let Ok(document) =
+                eure::parse_content::<balaur_core::eure_value::EureValue>(&text, path.clone())
+            else {
                 continue;
             };
-            let Some(nodes) = document.get("nodes").and_then(toml::Value::as_array) else {
+            let Some(nodes) = document.get("nodes") else {
                 continue;
             };
-            for node in nodes {
+            for node in nodes.as_array_items() {
                 // `script` is a path, or a table whose `source` is one.
                 let script = match node.get("script") {
-                    Some(toml::Value::String(path)) => Some(path.clone()),
-                    Some(toml::Value::Table(table)) => table
-                        .get("source")
-                        .and_then(toml::Value::as_str)
-                        .map(str::to_string),
-                    _ => None,
+                    Some(v) if v.is_table() => {
+                        v.get("source").and_then(|s| s.as_str().map(str::to_string))
+                    }
+                    Some(v) => v.as_str().map(str::to_string),
+                    None => None,
                 };
                 if let Some(script) = script {
                     out.insert(script);

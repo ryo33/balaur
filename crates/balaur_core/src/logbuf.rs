@@ -141,13 +141,24 @@ pub fn capture(max_level: LevelFilter) {
 }
 
 /// Capture only, without stderr output. For tests.
+///
+/// Filtered to `DEBUG` and above: below that, dependencies like eure's parser
+/// emit `trace!`-level grammar tracing on every parse, which would otherwise
+/// flood the fixed-capacity buffer and evict the entries a test is actually
+/// looking for.
 #[allow(clippy::disallowed_methods, reason = "log timestamps, not simulation")]
 pub fn capture_for_test() {
     *lock_buffer() = Some(Buffer {
         start: Instant::now(),
         entries: VecDeque::new(),
     });
-    let _ = tracing_subscriber::registry().with(CaptureLayer).try_init();
+    let filter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::DEBUG.into())
+        .from_env_lossy();
+    let _ = tracing_subscriber::registry()
+        .with(filter)
+        .with(CaptureLayer)
+        .try_init();
 }
 
 /// The most recent `n` entries, oldest first.

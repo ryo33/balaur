@@ -12,13 +12,13 @@ const SCRIPT: &str = "pub fn fixed_update(this, dt) {
 fn project(dir: &std::path::Path) {
     std::fs::create_dir_all(dir.join("scripts")).unwrap();
     std::fs::write(
-        dir.join("project.toml"),
-        "name = \"t\"\nmain_scene = \"main.toml\"\n",
+        dir.join("project.eure"),
+        "name = \"t\"\nmain_scene = \"main.eure\"\n",
     )
     .unwrap();
     std::fs::write(
-        dir.join("main.toml"),
-        "[[nodes]]\nid = \"n\"\nname = \"Runner\"\nscript = \"scripts/s.rn\"\n",
+        dir.join("main.eure"),
+        "@ nodes[] {\n  id: n\n  name: Runner\n  script: scripts/s.rn\n}\n",
     )
     .unwrap();
     std::fs::write(dir.join("scripts").join("s.rn"), SCRIPT).unwrap();

@@ -124,35 +124,38 @@ pub fn ensure_loaded(eng: &Engine) {
     validate(&mut buses);
 }
 
-/// The `[audio.buses]` table, or nothing.
+/// The `@ audio.buses` section, or nothing.
 fn declared(eng: &Engine) -> BTreeMap<String, Bus> {
-    #[derive(serde::Deserialize)]
+    #[derive(eure::FromEure)]
+    #[eure(crate = ::eure::document, allow_unknown_fields)]
     struct Declared {
-        #[serde(default = "one")]
+        #[eure(default = "one")]
         volume: f32,
-        #[serde(default)]
+        #[eure(default)]
         parent: String,
     }
     fn one() -> f32 {
         1.0
     }
-    #[derive(serde::Deserialize, Default)]
+    #[derive(eure::FromEure, Default)]
+    #[eure(crate = ::eure::document, allow_unknown_fields)]
     struct Audio {
-        #[serde(default)]
+        #[eure(default)]
         buses: BTreeMap<String, Declared>,
     }
-    #[derive(serde::Deserialize)]
+    #[derive(eure::FromEure)]
+    #[eure(crate = ::eure::document, allow_unknown_fields)]
     struct Manifest {
-        #[serde(default)]
+        #[eure(default)]
         audio: Audio,
     }
     let Some(source) = balaur_core::project::manifest_source(eng) else {
         return BTreeMap::new();
     };
-    let parsed = match toml::from_str::<Manifest>(&source) {
+    let parsed = match eure::parse_content::<Manifest>(&source, std::path::PathBuf::from("project.eure")) {
         Ok(manifest) => manifest.audio.buses,
         Err(err) => {
-            tracing::warn!("project.toml [audio.buses]: {err}; no buses declared");
+            tracing::warn!("project.eure [audio.buses]: {err}; no buses declared");
             return BTreeMap::new();
         }
     };

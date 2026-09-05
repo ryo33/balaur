@@ -5,7 +5,7 @@ use balaur_core::{App, AppConfig};
 
 fn project(files: &[(&str, &str)]) -> tempfile::TempDir {
     let dir = tempfile::tempdir().unwrap();
-    std::fs::write(dir.path().join("project.toml"), "[project]\nname = \"t\"\n").unwrap();
+    std::fs::write(dir.path().join("project.eure"), "name = \"t\"\n").unwrap();
     for (name, body) in files {
         let path = dir.path().join(name);
         if let Some(parent) = path.parent() {
@@ -74,9 +74,9 @@ fn build(scene: &str, script: &str) -> (tempfile::TempDir, App) {
 #[test]
 fn a_scene_property_is_on_this_before_init_runs() {
     let (_dir, app) = build(
-        "[[nodes]]\n\
-         name = \"Enemy\"\n\
-         script = { source = \"scripts/enemy.rn\", props = { speed = 3.5, name = \"brute\" } }\n",
+        "@ nodes[]\n\
+         name: Enemy\n\
+         script = { source => \"scripts/enemy.rn\", props => { speed => 3.5, name => \"brute\" } }\n",
         ENEMY,
     );
     let enemy = node_named(&app, "Enemy");
@@ -89,9 +89,9 @@ fn a_scene_property_is_on_this_before_init_runs() {
 #[test]
 fn the_string_form_of_the_script_key_still_attaches() {
     let (_dir, app) = build(
-        "[[nodes]]\n\
-         name = \"Enemy\"\n\
-         script = \"scripts/enemy.rn\"\n",
+        "@ nodes[]\n\
+         name: Enemy\n\
+         script: scripts/enemy.rn\n",
         ENEMY,
     );
     let enemy = node_named(&app, "Enemy");
@@ -101,13 +101,13 @@ fn the_string_form_of_the_script_key_still_attaches() {
 #[test]
 fn two_nodes_on_one_script_get_their_own_values() {
     let (_dir, app) = build(
-        "[[nodes]]\n\
-         name = \"Fast\"\n\
-         script = { source = \"scripts/enemy.rn\", props = { speed = 9.0 } }\n\
+        "@ nodes[]\n\
+         name: Fast\n\
+         script = { source => \"scripts/enemy.rn\", props => { speed => 9.0 } }\n\
          \n\
-         [[nodes]]\n\
-         name = \"Slow\"\n\
-         script = { source = \"scripts/enemy.rn\", props = { speed = 0.5 } }\n",
+         @ nodes[]\n\
+         name: Slow\n\
+         script = { source => \"scripts/enemy.rn\", props => { speed => 0.5 } }\n",
         ENEMY,
     );
     let (fast, slow) = (node_named(&app, "Fast"), node_named(&app, "Slow"));
@@ -121,9 +121,9 @@ fn two_nodes_on_one_script_get_their_own_values() {
 #[test]
 fn a_property_the_script_does_not_export_is_still_written() {
     let (_dir, app) = build(
-        "[[nodes]]\n\
-         name = \"Enemy\"\n\
-         script = { source = \"scripts/enemy.rn\", props = { speeed = 3.5 } }\n",
+        "@ nodes[]\n\
+         name: Enemy\n\
+         script = { source => \"scripts/enemy.rn\", props => { speeed => 3.5 } }\n",
         "pub fn exports() { #{ speed: 2.0 } }\n\
          pub fn init(this) { this.seen = this.speeed; }\n",
     );
@@ -134,9 +134,9 @@ fn a_property_the_script_does_not_export_is_still_written() {
 #[test]
 fn a_script_without_exports_takes_properties_anyway() {
     let (_dir, app) = build(
-        "[[nodes]]\n\
-         name = \"Enemy\"\n\
-         script = { source = \"scripts/enemy.rn\", props = { speed = 7.0 } }\n",
+        "@ nodes[]\n\
+         name: Enemy\n\
+         script = { source => \"scripts/enemy.rn\", props => { speed => 7.0 } }\n",
         "pub fn init(this) { this.seen = this.speed; }\n",
     );
     let enemy = node_named(&app, "Enemy");
@@ -186,13 +186,13 @@ fn exports_returning_something_other_than_an_object_is_an_error() {
 #[test]
 fn a_packed_game_boots_with_the_properties_its_scene_set() {
     let dir = project(&[
-        ("project.toml", "name = \"t\"\nmain_scene = \"main.toml\"\n"),
+        ("project.eure", "name = \"t\"\nmain_scene = \"main.eure\"\n"),
         ("scripts/enemy.rn", ENEMY),
         (
-            "main.toml",
-            "[[nodes]]\n\
-             name = \"Enemy\"\n\
-             script = { source = \"scripts/enemy.rn\", props = { speed = 4.25 } }\n",
+            "main.eure",
+            "@ nodes[]\n\
+             name: Enemy\n\
+             script = { source => \"scripts/enemy.rn\", props => { speed => 4.25 } }\n",
         ),
     ]);
     // The host is the compiler: a script is compiled against the modules the
@@ -226,26 +226,26 @@ fn scripts_inside_a_prefab_attach_with_their_properties() {
     let dir = project(&[
         ("scripts/enemy.rn", ENEMY),
         (
-            "scenes/enemy.toml",
-            "[[nodes]]\n\
-             id = \"n_body\"\n\
-             name = \"Body\"\n\
-             script = { source = \"scripts/enemy.rn\", props = { speed = 1.5 } }\n",
+            "scenes/enemy.eure",
+            "@ nodes[]\n\
+             id: n_body\n\
+             name: Body\n\
+             script = { source => \"scripts/enemy.rn\", props => { speed => 1.5 } }\n",
         ),
     ]);
     let app = app_in(dir.path());
     let root = app.engine.root();
     balaur_core::project::instantiate_scene(
         &app.engine,
-        "[[nodes]]\n\
-         id = \"n_left\"\n\
-         name = \"Left\"\n\
-         instance = \"scenes/enemy.toml\"\n\
+        "@ nodes[]\n\
+         id: n_left\n\
+         name: Left\n\
+         instance: scenes/enemy.eure\n\
          \n\
-         [[nodes]]\n\
-         id = \"n_right\"\n\
-         name = \"Right\"\n\
-         instance = \"scenes/enemy.toml\"\n",
+         @ nodes[]\n\
+         id: n_right\n\
+         name: Right\n\
+         instance: scenes/enemy.eure\n",
         root,
         true,
     )
@@ -263,21 +263,21 @@ fn scripts_inside_a_prefab_attach_with_their_properties() {
 #[test]
 fn a_packed_game_builds_its_prefabs() {
     let dir = project(&[
-        ("project.toml", "name = \"t\"\nmain_scene = \"main.toml\"\n"),
+        ("project.eure", "name = \"t\"\nmain_scene = \"main.eure\"\n"),
         ("scripts/enemy.rn", ENEMY),
         (
-            "scenes/enemy.toml",
-            "[[nodes]]\n\
-             id = \"n_body\"\n\
-             name = \"Body\"\n\
-             script = { source = \"scripts/enemy.rn\", props = { speed = 6.5 } }\n",
+            "scenes/enemy.eure",
+            "@ nodes[]\n\
+             id: n_body\n\
+             name: Body\n\
+             script = { source => \"scripts/enemy.rn\", props => { speed => 6.5 } }\n",
         ),
         (
-            "main.toml",
-            "[[nodes]]\n\
-             id = \"n_enemy\"\n\
-             name = \"Enemy\"\n\
-             instance = \"scenes/enemy.toml\"\n",
+            "main.eure",
+            "@ nodes[]\n\
+             id: n_enemy\n\
+             name: Enemy\n\
+             instance: scenes/enemy.eure\n",
         ),
     ]);
     let built = app_in(dir.path());
@@ -307,29 +307,29 @@ fn an_override_retunes_a_prefabs_script() {
     let dir = project(&[
         ("scripts/enemy.rn", ENEMY),
         (
-            "scenes/enemy.toml",
-            "[[nodes]]\n\
-             id = \"n_body\"\n\
-             name = \"Body\"\n\
-             script = { source = \"scripts/enemy.rn\", props = { speed = 1.5 } }\n",
+            "scenes/enemy.eure",
+            "@ nodes[]\n\
+             id: n_body\n\
+             name: Body\n\
+             script = { source => \"scripts/enemy.rn\", props => { speed => 1.5 } }\n",
         ),
     ]);
     let app = app_in(dir.path());
     let root = app.engine.root();
     balaur_core::project::instantiate_scene(
         &app.engine,
-        "[[nodes]]\n\
-         id = \"n_slow\"\n\
-         name = \"Slow\"\n\
-         instance = \"scenes/enemy.toml\"\n\
+        "@ nodes[]\n\
+         id: n_slow\n\
+         name: Slow\n\
+         instance: scenes/enemy.eure\n\
          \n\
-         [[nodes]]\n\
-         id = \"n_fast\"\n\
-         name = \"Fast\"\n\
-         instance = \"scenes/enemy.toml\"\n\
+         @ nodes[] {\n\
+         id: n_fast\n\
+         name: Fast\n\
+         instance: scenes/enemy.eure\n\
          \n\
-         [nodes.overrides.\"Body\".script.props]\n\
-         speed = 12.0\n",
+         overrides.'Body'.script.props.speed = 12.0\n\
+         }\n",
         root,
         true,
     )

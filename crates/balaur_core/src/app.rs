@@ -70,7 +70,7 @@ pub struct ScriptSetup<'a> {
 ///
 /// Core names no language. The crate assembling the app picks a backend and
 /// puts its factory here; `balaur::standard_app` reads `language` from
-/// project.toml and installs the matching backend. An app with no
+/// project.eure and installs the matching backend. An app with no
 /// factory runs without scripting: binding registrations are discarded and the
 /// per-frame script systems do nothing.
 pub type ScriptHostFactory =
@@ -540,7 +540,7 @@ impl App {
         self
     }
 
-    /// Load `project.toml` and instantiate the main scene. Call after all
+    /// Load `project.eure` and instantiate the main scene. Call after all
     /// plugins are added so their scene keys are known.
     pub fn load_project(&mut self) -> Result<&mut Self> {
         let (manifest_src, scene_src);
@@ -554,9 +554,9 @@ impl App {
                 .with_context(|| format!("scene {} missing from pack", manifest.main_scene))?;
             self.manifest = Some(manifest);
         } else {
-            let path = self.project_root.join("project.toml");
+            let path = self.project_root.join("project.eure");
             manifest_src = std::fs::read_to_string(&path)
-                .with_context(|| format!("no project.toml in {}", self.project_root.display()))?;
+                .with_context(|| format!("no project.eure in {}", self.project_root.display()))?;
             let manifest = ProjectManifest::parse(&manifest_src)?;
             let scene_path = self.project_root.join(&manifest.main_scene);
             scene_src = std::fs::read_to_string(&scene_path)
@@ -576,24 +576,27 @@ impl App {
         Ok(self)
     }
 
-    /// Load `presets.toml`, letting a project name its own recipes.
+    /// Load `presets.eure`, letting a project name its own recipes.
     ///
     /// Read through `ProjectFiles`, so a packed game gets the same presets a
     /// dev run does. Absent is the normal case, not an error; malformed is an
     /// error, because silently ignoring it hides a typo forever.
     fn load_project_presets(&mut self) -> Result<()> {
         let files = self.engine.resource::<project::ProjectFiles>();
-        let Ok(bytes) = files.borrow().read("presets.toml") else {
+        let Ok(bytes) = files.borrow().read("presets.eure") else {
             return Ok(());
         };
-        let text = String::from_utf8(bytes).context("presets.toml is not UTF-8")?;
-        let table: toml::Value = toml::from_str(&text).context("parsing presets.toml")?;
-        let table = table
-            .as_table()
-            .ok_or_else(|| anyhow::anyhow!("presets.toml should be a table of presets"))?;
-        for (name, body) in table {
-            let def = crate::presets::from_toml(name, body)?;
-            self.register_preset(name, def);
+        let text = String::from_utf8(bytes).context("presets.eure is not UTF-8")?;
+        let table: crate::eure_value::EureValue = crate::eure_runtime::of(&self.engine)
+            .borrow()
+            .parse(std::path::Path::new("presets.eure"), &text)
+            .context("parsing presets.eure")?;
+        if !table.is_table() {
+            return Err(anyhow::anyhow!("presets.eure should be a table of presets"));
+        }
+        for (name, body) in table.iter_table() {
+            let def = crate::presets::from_eure(&name, &body)?;
+            self.register_preset(&name, def);
         }
         Ok(())
     }

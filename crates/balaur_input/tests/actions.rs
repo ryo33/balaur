@@ -6,9 +6,9 @@ use balaur_input::{InputActions, InputPlugin, InputSnapshot};
 
 const MANIFEST: &str = r#"
 name = "actions test"
-main_scene = "main.toml"
+main_scene = "main.eure"
 
-[input.actions]
+@ input.actions
 jump = ["Space", "gamepad:South"]
 move_x = ["keys:A,D", "axis:LeftStickX"]
 fire = ["mouse:left"]
@@ -18,8 +18,8 @@ fire = ["mouse:left"]
 /// The main scene is empty: nothing here needs a node.
 fn app(manifest: &str) -> (tempfile::TempDir, App) {
     let dir = tempfile::tempdir().unwrap();
-    std::fs::write(dir.path().join("project.toml"), manifest).unwrap();
-    std::fs::write(dir.path().join("main.toml"), "").unwrap();
+    std::fs::write(dir.path().join("project.eure"), manifest).unwrap();
+    std::fs::write(dir.path().join("main.eure"), "").unwrap();
     let mut app = App::new(AppConfig {
         project_root: dir.path().to_path_buf(),
         pack: None,
@@ -128,9 +128,9 @@ fn an_undeclared_action_reads_zero_rather_than_failing() {
 fn a_binding_that_does_not_parse_is_dropped_and_the_rest_still_work() {
     let (_dir, mut app) = app(r#"
 name = "actions test"
-main_scene = "main.toml"
+main_scene = "main.eure"
 
-[input.actions]
+@ input.actions
 jump = ["Spacebar", "Space"]
 "#);
     frame(&mut app, &[("Space", true)]);
@@ -177,7 +177,7 @@ fn the_declared_actions_are_listed_in_a_stable_order() {
 
 #[test]
 fn a_project_declaring_no_actions_is_not_an_error() {
-    let (_dir, mut app) = app("name = \"t\"\nmain_scene = \"main.toml\"\n");
+    let (_dir, mut app) = app("name = \"t\"\nmain_scene = \"main.eure\"\n");
     frame(&mut app, &[("Space", true)]);
     assert!(app
         .engine

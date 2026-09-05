@@ -14,32 +14,34 @@ fn run(script: &str) -> Vec<String> {
     let dir = tempfile::tempdir().unwrap();
     std::fs::create_dir_all(dir.path().join("scripts")).unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"p\"\nmain_scene = \"main.toml\"\n",
+        dir.path().join("project.eure"),
+        "name = \"p\"\nmain_scene = \"main.eure\"\n",
     )
     .unwrap();
     std::fs::write(
-        dir.path().join("main.toml"),
-        r##"[[assets]]
-id = "pillar"
-type = "voxels"
+        dir.path().join("main.eure"),
+        r##"
+@ assets[]
+id: pillar
+type: voxels
 size = [1.0, 1.0, 1.0]
 cells = [[0, 0, 0], [0, 1, 0], [0, 2, 0]]
 
-[[assets]]
-id = "wedge"
-type = "mesh"
+@ assets[]
+id: wedge
+type: mesh
 positions = [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
 indices = [[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]]
 
-[[nodes]]
-id = "n_terrain"
-name = "Terrain"
-script = "scripts/s.rn"
+@ nodes[] {
+  id: n_terrain
+  name: Terrain
+  script: scripts/s.rn
 
-[nodes.collider3d]
-kind = "voxels"
-voxels = "#pillar"
+  @ collider3d
+  kind: voxels
+  voxels = "#pillar"
+}
 "##,
     )
     .unwrap();

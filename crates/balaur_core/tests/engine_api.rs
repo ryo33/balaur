@@ -113,11 +113,11 @@ fn rng_int_stays_inside_its_range() {
 fn fs_is_rooted_at_the_project() {
     let dir = tempfile::tempdir().unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"t\"\nmain_scene = \"m.toml\"\n",
+        dir.path().join("project.eure"),
+        "name = \"t\"\nmain_scene = \"m.eure\"\n",
     )
     .unwrap();
-    std::fs::write(dir.path().join("m.toml"), "").unwrap();
+    std::fs::write(dir.path().join("m.eure"), "").unwrap();
     let mut app = app_in(dir.path());
     app.load_project().unwrap();
 

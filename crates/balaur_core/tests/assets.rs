@@ -77,19 +77,19 @@ fn project() -> tempfile::TempDir {
     let dir = tempfile::tempdir().unwrap();
     std::fs::create_dir_all(dir.path().join("notes")).unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"p\"\nmain_scene = \"scenes/main.toml\"\n",
+        dir.path().join("project.eure"),
+        "name = \"p\"\nmain_scene = \"scenes/main.eure\"\n",
     )
     .unwrap();
     std::fs::write(
-        dir.path().join("notes/scale.toml"),
+        dir.path().join("notes/scale.eure"),
         r#"type = "note"
 pitch = 1.0
 
-[entries.high]
+@ entries.high
 pitch = 880.0
 
-[entries.low]
+@ entries.low
 pitch = 110.0
 "#,
     )
@@ -109,15 +109,15 @@ fn pitch_of(eng: &Engine, reference: &str) -> f64 {
 fn a_reference_to_a_whole_file_resolves_to_that_file() {
     let dir = project();
     let app = app_in(dir.path(), None);
-    assert!((pitch_of(&app.engine, "notes/scale.toml") - 1.0).abs() < f64::EPSILON);
+    assert!((pitch_of(&app.engine, "notes/scale.eure") - 1.0).abs() < f64::EPSILON);
 }
 
 #[test]
 fn a_reference_to_a_named_entry_resolves_to_the_entry_inside_the_file() {
     let dir = project();
     let app = app_in(dir.path(), None);
-    assert!((pitch_of(&app.engine, "notes/scale.toml#high") - 880.0).abs() < f64::EPSILON);
-    assert!((pitch_of(&app.engine, "notes/scale.toml#low") - 110.0).abs() < f64::EPSILON);
+    assert!((pitch_of(&app.engine, "notes/scale.eure#high") - 880.0).abs() < f64::EPSILON);
+    assert!((pitch_of(&app.engine, "notes/scale.eure#low") - 110.0).abs() < f64::EPSILON);
 }
 
 #[test]
@@ -126,9 +126,9 @@ fn an_entry_inherits_the_asset_type_its_document_declares() {
     let app = app_in(dir.path(), None);
     // Only the document says `type = "note"`; the entry says nothing, and it
     // still finds the parser.
-    let definition = assets::definition(&app.engine, "notes/scale.toml#high").unwrap();
+    let definition = assets::definition(&app.engine, "notes/scale.eure#high").unwrap();
     assert!(definition.get("type").is_none());
-    assert!((pitch_of(&app.engine, "notes/scale.toml#high") - 880.0).abs() < f64::EPSILON);
+    assert!((pitch_of(&app.engine, "notes/scale.eure#high") - 880.0).abs() < f64::EPSILON);
 }
 
 #[test]
@@ -139,15 +139,15 @@ fn a_scene_asset_block_resolves_by_its_id_from_a_node_in_that_scene() {
     balaur_core::project::instantiate_scene(
         &app.engine,
         r##"
-[[assets]]
-id = "fanfare"
-type = "note"
+@ assets[]
+id: fanfare
+type: note
 pitch = 440.0
 
-[[nodes]]
-id = "player"
-name = "Player"
-instrument = { song = "#fanfare" }
+@ nodes[]
+id: player
+name: Player
+instrument = { song => "#fanfare" }
 "##,
         root,
         false,
@@ -169,7 +169,7 @@ fn an_inline_table_is_a_definition_and_a_string_is_a_reference() {
 
     let table: toml::Value = toml::from_str("song = { pitch = 220.0 }").unwrap();
     components::add(&app.engine, inline, "instrument", Some(&table)).unwrap();
-    let reference: toml::Value = toml::from_str("song = \"notes/scale.toml#low\"").unwrap();
+    let reference: toml::Value = toml::from_str("song = \"notes/scale.eure#low\"").unwrap();
     components::add(&app.engine, external, "instrument", Some(&reference)).unwrap();
 
     let seen = heard(&app);
@@ -180,7 +180,7 @@ fn an_inline_table_is_a_definition_and_a_string_is_a_reference() {
         "an inline definition should reach `apply` as a reference, got {:?}",
         seen[0]
     );
-    assert_eq!(seen[1], "notes/scale.toml#low");
+    assert_eq!(seen[1], "notes/scale.eure#low");
     assert!((pitch_of(&app.engine, &seen[0]) - 220.0).abs() < f64::EPSILON);
     assert!((pitch_of(&app.engine, &seen[1]) - 110.0).abs() < f64::EPSILON);
 }
@@ -199,8 +199,8 @@ fn an_empty_asset_property_is_no_asset_rather_than_a_broken_reference() {
 fn two_nodes_naming_one_path_share_one_parsed_object() {
     let dir = project();
     let app = app_in(dir.path(), None);
-    let first = assets::load(&app.engine, "notes/scale.toml#high").unwrap();
-    let second = assets::load(&app.engine, "notes/scale.toml#high").unwrap();
+    let first = assets::load(&app.engine, "notes/scale.eure#high").unwrap();
+    let second = assets::load(&app.engine, "notes/scale.eure#high").unwrap();
     assert!(
         Rc::ptr_eq(&first, &second),
         "sharing is the default: one path, one parsed object"
@@ -211,8 +211,8 @@ fn two_nodes_naming_one_path_share_one_parsed_object() {
 fn duplicate_hands_back_a_private_copy_rather_than_the_shared_one() {
     let dir = project();
     let app = app_in(dir.path(), None);
-    let shared = assets::load(&app.engine, "notes/scale.toml#high").unwrap();
-    let private = assets::duplicate(&app.engine, "notes/scale.toml#high").unwrap();
+    let shared = assets::load(&app.engine, "notes/scale.eure#high").unwrap();
+    let private = assets::duplicate(&app.engine, "notes/scale.eure#high").unwrap();
     assert!(
         !Rc::ptr_eq(&shared, &private),
         "duplicate returned the cache"
@@ -223,7 +223,7 @@ fn duplicate_hands_back_a_private_copy_rather_than_the_shared_one() {
         "a private copy still holds the same content"
     );
     // And taking a copy must not evict what everyone else is holding.
-    let again = assets::load(&app.engine, "notes/scale.toml#high").unwrap();
+    let again = assets::load(&app.engine, "notes/scale.eure#high").unwrap();
     assert!(Rc::ptr_eq(&shared, &again));
 }
 
@@ -248,37 +248,37 @@ fn one_inline_definition_written_twice_is_cached_once() {
 fn reload_forgets_a_file_so_the_next_load_reads_it_again() {
     let dir = project();
     let app = app_in(dir.path(), None);
-    assert!((pitch_of(&app.engine, "notes/scale.toml#high") - 880.0).abs() < f64::EPSILON);
+    assert!((pitch_of(&app.engine, "notes/scale.eure#high") - 880.0).abs() < f64::EPSILON);
     std::fs::write(
-        dir.path().join("notes/scale.toml"),
-        "type = \"note\"\npitch = 1.0\n\n[entries.high]\npitch = 990.0\n",
+        dir.path().join("notes/scale.eure"),
+        "type = \"note\"\npitch = 1.0\n\n@ entries.high\npitch = 990.0\n",
     )
     .unwrap();
     // Still the old value: sharing means the parse is kept until told otherwise.
-    assert!((pitch_of(&app.engine, "notes/scale.toml#high") - 880.0).abs() < f64::EPSILON);
-    assets::reload(&app.engine, "notes/scale.toml").unwrap();
-    assert!((pitch_of(&app.engine, "notes/scale.toml#high") - 990.0).abs() < f64::EPSILON);
+    assert!((pitch_of(&app.engine, "notes/scale.eure#high") - 880.0).abs() < f64::EPSILON);
+    assets::reload(&app.engine, "notes/scale.eure").unwrap();
+    assert!((pitch_of(&app.engine, "notes/scale.eure#high") - 990.0).abs() < f64::EPSILON);
 }
 
 #[test]
 fn a_missing_file_fails_with_a_message_naming_the_reference() {
     let dir = project();
     let app = app_in(dir.path(), None);
-    let error = assets::load(&app.engine, "notes/nothing.toml")
+    let error = assets::load(&app.engine, "notes/nothing.eure")
         .unwrap_err()
         .to_string();
-    assert!(error.contains("notes/nothing.toml"), "unhelpful: {error}");
+    assert!(error.contains("notes/nothing.eure"), "unhelpful: {error}");
 }
 
 #[test]
 fn a_missing_entry_fails_with_a_message_naming_the_reference() {
     let dir = project();
     let app = app_in(dir.path(), None);
-    let error = assets::load(&app.engine, "notes/scale.toml#middle")
+    let error = assets::load(&app.engine, "notes/scale.eure#middle")
         .unwrap_err()
         .to_string();
     assert!(
-        error.contains("notes/scale.toml#middle"),
+        error.contains("notes/scale.eure#middle"),
         "unhelpful: {error}"
     );
     assert!(error.contains("middle"), "unhelpful: {error}");
@@ -288,7 +288,7 @@ fn a_missing_entry_fails_with_a_message_naming_the_reference() {
 fn a_malformed_reference_fails_with_a_message_naming_the_reference() {
     let dir = project();
     let app = app_in(dir.path(), None);
-    for bad in ["", "#", "a.toml#b#c"] {
+    for bad in ["", "#", "a.eure#b#c"] {
         let error = assets::load(&app.engine, bad).unwrap_err().to_string();
         assert!(
             error.contains("asset reference"),
@@ -308,7 +308,7 @@ fn an_unknown_scene_asset_id_is_named_in_a_warning_and_the_scene_still_loads() {
     let root = app.engine.root();
     balaur_core::project::instantiate_scene(
         &app.engine,
-        "[[nodes]]\nid = \"n\"\nname = \"N\"\ninstrument = { song = \"#nope\" }\n",
+        "@ nodes[]\nid: n\nname: N\ninstrument = { song => \"#nope\" }\n",
         root,
         false,
     )
@@ -339,12 +339,12 @@ fn an_asset_property_given_neither_a_string_nor_a_table_says_so() {
 fn an_asset_type_no_plugin_registered_says_which_type_was_asked_for() {
     let dir = project();
     std::fs::write(
-        dir.path().join("notes/alien.toml"),
+        dir.path().join("notes/alien.eure"),
         "type = \"hologram\"\npitch = 1.0\n",
     )
     .unwrap();
     let app = app_in(dir.path(), None);
-    let error = assets::load(&app.engine, "notes/alien.toml")
+    let error = assets::load(&app.engine, "notes/alien.eure")
         .unwrap_err()
         .to_string();
     assert!(error.contains("hologram"), "unhelpful: {error}");
@@ -357,12 +357,12 @@ fn an_asset_type_no_plugin_registered_says_which_type_was_asked_for() {
 #[test]
 fn a_definition_with_no_type_cannot_choose_a_parser_and_says_so() {
     let dir = project();
-    std::fs::write(dir.path().join("notes/bare.toml"), "pitch = 1.0\n").unwrap();
+    std::fs::write(dir.path().join("notes/bare.eure"), "pitch = 1.0\n").unwrap();
     let app = app_in(dir.path(), None);
-    let error = assets::load(&app.engine, "notes/bare.toml")
+    let error = assets::load(&app.engine, "notes/bare.eure")
         .unwrap_err()
         .to_string();
-    assert!(error.contains("notes/bare.toml"), "unhelpful: {error}");
+    assert!(error.contains("notes/bare.eure"), "unhelpful: {error}");
     assert!(error.contains("type"), "unhelpful: {error}");
 }
 
@@ -370,10 +370,10 @@ fn a_definition_with_no_type_cannot_choose_a_parser_and_says_so() {
 fn exists_answers_for_all_three_reference_forms() {
     let dir = project();
     let app = app_in(dir.path(), None);
-    assert!(assets::exists(&app.engine, "notes/scale.toml"));
-    assert!(assets::exists(&app.engine, "notes/scale.toml#high"));
-    assert!(!assets::exists(&app.engine, "notes/scale.toml#middle"));
-    assert!(!assets::exists(&app.engine, "notes/missing.toml"));
+    assert!(assets::exists(&app.engine, "notes/scale.eure"));
+    assert!(assets::exists(&app.engine, "notes/scale.eure#high"));
+    assert!(!assets::exists(&app.engine, "notes/scale.eure#middle"));
+    assert!(!assets::exists(&app.engine, "notes/missing.eure"));
     assert!(!assets::exists(&app.engine, "#never_declared"));
 }
 
@@ -456,10 +456,10 @@ impl balaur_script::ScriptCompiler for NoScripts {
 fn a_packed_run_resolves_an_asset_exactly_as_a_dev_run_does() {
     let dir = project();
     let dev = app_in(dir.path(), None);
-    let from_disk = assets::definition(&dev.engine, "notes/scale.toml#high").unwrap();
+    let from_disk = assets::definition(&dev.engine, "notes/scale.eure#high").unwrap();
 
     let pack = Pack::build(dir.path(), &NoScripts).unwrap();
-    assert!(pack.scenes.contains_key("notes/scale.toml"));
+    assert!(pack.scenes.contains_key("notes/scale.eure"));
 
     // A project root that does not exist, so nothing can fall back to disk.
     let elsewhere = dir.path().join("shipped");
@@ -469,9 +469,9 @@ fn a_packed_run_resolves_an_asset_exactly_as_a_dev_run_does() {
         modules: RefCell::new(Vec::new()),
     }));
 
-    let from_pack = assets::definition(&packed.engine, "notes/scale.toml#high").unwrap();
+    let from_pack = assets::definition(&packed.engine, "notes/scale.eure#high").unwrap();
     assert_eq!(from_pack, from_disk);
-    assert!((pitch_of(&packed.engine, "notes/scale.toml#high") - 880.0).abs() < f64::EPSILON);
+    assert!((pitch_of(&packed.engine, "notes/scale.eure#high") - 880.0).abs() < f64::EPSILON);
 }
 
 #[test]
@@ -567,18 +567,18 @@ fn an_entry_an_inline_definition_does_not_have_says_so() {
 fn saving_an_asset_writes_the_file_and_the_next_load_reads_it() {
     let dir = project();
     let app = app_in(dir.path(), None);
-    assert!((pitch_of(&app.engine, "notes/scale.toml#high") - 880.0).abs() < f64::EPSILON);
+    assert!((pitch_of(&app.engine, "notes/scale.eure#high") - 880.0).abs() < f64::EPSILON);
 
-    let mut document = assets::definition(&app.engine, "notes/scale.toml").unwrap();
+    let mut document = assets::definition(&app.engine, "notes/scale.eure").unwrap();
     document["entries"]["high"]["pitch"] = toml::Value::Float(1760.0);
-    assets::save(&app.engine, "notes/scale.toml", &document).unwrap();
+    assets::save(&app.engine, "notes/scale.eure", &document).unwrap();
 
     // On disk, not just in the cache: a second app reading the same directory
     // is what a re-run of the game is.
     let reopened = app_in(dir.path(), None);
-    assert!((pitch_of(&reopened.engine, "notes/scale.toml#high") - 1760.0).abs() < f64::EPSILON);
+    assert!((pitch_of(&reopened.engine, "notes/scale.eure#high") - 1760.0).abs() < f64::EPSILON);
     // And the entry cut from the old text is gone from the live cache too.
-    assert!((pitch_of(&app.engine, "notes/scale.toml#high") - 1760.0).abs() < f64::EPSILON);
+    assert!((pitch_of(&app.engine, "notes/scale.eure#high") - 1760.0).abs() < f64::EPSILON);
 }
 
 /// Only a file can be saved. An entry belongs to a document and an inline
@@ -590,10 +590,10 @@ fn saving_something_that_is_not_a_file_says_which_reference_it_was() {
     let app = app_in(dir.path(), None);
     let body = toml::Value::Table(toml::map::Map::new());
 
-    let err = assets::save(&app.engine, "notes/scale.toml#high", &body).unwrap_err();
+    let err = assets::save(&app.engine, "notes/scale.eure#high", &body).unwrap_err();
     let message = format!("{err:#}");
     assert!(
-        message.contains("notes/scale.toml#high"),
+        message.contains("notes/scale.eure#high"),
         "unhelpful: {message}"
     );
 
@@ -615,15 +615,15 @@ fn the_generation_moves_only_when_a_reload_actually_dropped_something() {
     let app = app_in(dir.path(), None);
     let untouched = assets::generation(&app.engine);
 
-    assets::reload(&app.engine, "notes/scale.toml").unwrap();
+    assets::reload(&app.engine, "notes/scale.eure").unwrap();
     assert_eq!(
         assets::generation(&app.engine),
         untouched,
         "nothing was cached, so nothing was dropped"
     );
 
-    let _ = assets::load_typed::<Note>(&app.engine, "notes/scale.toml#high").unwrap();
-    assets::reload(&app.engine, "notes/scale.toml").unwrap();
+    let _ = assets::load_typed::<Note>(&app.engine, "notes/scale.eure#high").unwrap();
+    assets::reload(&app.engine, "notes/scale.eure").unwrap();
     assert_ne!(
         assets::generation(&app.engine),
         untouched,

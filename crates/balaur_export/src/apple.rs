@@ -1,4 +1,4 @@
-//! What `[apple]` in `project.toml` puts into an exported bundle: the
+//! What `@ apple` in `project.eure` puts into an exported bundle: the
 //! identifier the App Store resolves a game against, the `Info.plist` keys,
 //! and the entitlement each capability needs.
 //!
@@ -11,6 +11,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
+use eure::FromEure;
 
 /// Which bundle a plist is being written for. The keys differ, and so do the
 /// version numbers a capability needs.
@@ -25,8 +26,8 @@ pub(crate) enum Platform {
 /// The set is closed on purpose: an entitlement this exporter does not
 /// understand is one it cannot check, and a misspelled one fails at the
 /// player's first launch rather than at export.
-#[derive(Clone, Copy, PartialEq, Eq, Debug, serde::Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, FromEure)]
+#[eure(crate = ::eure::document, rename_all = "kebab-case")]
 pub(crate) enum Capability {
     /// Sign in with Apple: `com.apple.developer.applesignin`.
     Applesignin,
@@ -66,10 +67,10 @@ impl Capability {
     }
 }
 
-/// A value an `[apple.plist]` entry may take, and everything a plist can
+/// A value an `apple.plist` entry may take, and everything a plist can
 /// hold that a game is likely to write by hand.
-#[derive(Clone, Debug, serde::Deserialize)]
-#[serde(untagged)]
+#[derive(Clone, Debug, FromEure)]
+#[eure(crate = ::eure::document)]
 pub(crate) enum PlistValue {
     Bool(bool),
     Int(i64),
@@ -78,42 +79,71 @@ pub(crate) enum PlistValue {
     List(Vec<PlistValue>),
 }
 
-/// The `[apple]` table:
+/// The `@ apple` section:
 ///
-/// ```toml
-/// [apple]
+/// ```eure
+/// @ apple
 /// bundle_id = "com.studio.game"
 /// team = "AB12CD34EF"
 /// min_os = "15.0"
 /// capabilities = ["applesignin", "game-center", "icloud-kv"]
 ///
-/// [apple.plist]
+/// @ apple.plist
 /// ITSAppUsesNonExemptEncryption = false
 /// ```
-#[derive(Clone, Debug, serde::Deserialize)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Clone, Debug, FromEure)]
+#[eure(crate = ::eure::document)]
 pub(crate) struct AppleConfig {
     /// The identifier registered in App Store Connect. Empty means the game
     /// declares none, and the exporter keeps its old `org.balaur.<name>`.
+    #[eure(default)]
     pub bundle_id: String,
     /// The ten-character team identifier. Xcode expands
     /// `$(TeamIdentifierPrefix)` from it; nothing expands anything here, so
     /// an entitlement that carries the prefix needs the real value.
+    #[eure(default)]
     pub team: String,
+    #[eure(default)]
     pub display_name: String,
+    #[eure(default = "default_version")]
     pub version: String,
+    #[eure(default = "default_build")]
     pub build: String,
     /// `MinimumOSVersion` on iOS.
+    // The templates are built for these (scripts/package_template.sh,
+    // scripts/package.sh), which is where StoreKit 2 starts; a plist may not
+    // claim less than the binary was built for.
+    #[eure(default = "default_min_os")]
     pub min_os: String,
     /// `LSMinimumSystemVersion` on macOS.
+    #[eure(default = "default_min_macos")]
     pub min_macos: String,
     /// macOS only: `LSApplicationCategoryType`.
+    #[eure(default)]
     pub category: String,
+    #[eure(default)]
     pub capabilities: Vec<Capability>,
     /// Keys merged into `Info.plist` as written. The exporter writes the
     /// plist whole, so a key it does not know goes here rather than into the
     /// template.
+    #[eure(default)]
     pub plist: BTreeMap<String, PlistValue>,
+}
+
+fn default_version() -> String {
+    "1.0".into()
+}
+
+fn default_build() -> String {
+    "1".into()
+}
+
+fn default_min_os() -> String {
+    "15.0".into()
+}
+
+fn default_min_macos() -> String {
+    "12.0".into()
 }
 
 impl Default for AppleConfig {
@@ -137,21 +167,23 @@ impl Default for AppleConfig {
 }
 
 impl AppleConfig {
-    /// The `[apple]` table of a project, or the defaults when there is none.
+    /// The `@ apple` section of a project, or the defaults when there is none.
     ///
-    /// A table that does not parse is an error rather than a warning: a
+    /// A section that does not parse is an error rather than a warning: a
     /// misspelled capability or identifier is not something to ship past.
     pub(crate) fn load(project: &Path) -> Result<Self> {
-        #[derive(serde::Deserialize)]
+        #[derive(FromEure)]
+        #[eure(crate = ::eure::document, allow_unknown_fields)]
         struct Manifest {
-            #[serde(default)]
+            #[eure(default)]
             apple: AppleConfig,
         }
-        let path = project.join("project.toml");
+        let path = project.join("project.eure");
         let Ok(source) = std::fs::read_to_string(&path) else {
             return Ok(Self::default());
         };
-        let manifest: Manifest = toml::from_str(&source)
+        let manifest: Manifest = eure::parse_content(&source, path.clone())
+            .map_err(|err| anyhow::anyhow!("{err}"))
             .with_context(|| format!("parsing [apple] in {}", path.display()))?;
         Ok(manifest.apple)
     }
@@ -379,14 +411,15 @@ fn escape(text: &str) -> String {
 mod tests {
     use super::{AppleConfig, Capability, Platform};
 
-    fn config(table: &str) -> AppleConfig {
-        #[derive(serde::Deserialize)]
+    fn config(body: &str) -> AppleConfig {
+        #[derive(eure::FromEure)]
+        #[eure(crate = ::eure::document, allow_unknown_fields)]
         struct Manifest {
-            #[serde(default)]
+            #[eure(default)]
             apple: AppleConfig,
         }
-        toml::from_str::<Manifest>(table)
-            .expect("the table parses")
+        eure::parse_content::<Manifest>(body, "project.eure".into())
+            .expect("the document parses")
             .apple
     }
 
@@ -400,7 +433,7 @@ mod tests {
 
     #[test]
     fn a_capability_without_a_bundle_id_is_refused() {
-        let config = config("[apple]\ncapabilities = [\"game-center\"]\n");
+        let config = config("@ apple\ncapabilities = [\"game-center\"]\n");
         let err = config
             .check(Platform::Ios)
             .expect_err("an entitlement on an identifier no account owns")
@@ -409,23 +442,28 @@ mod tests {
     }
 
     #[test]
-    fn a_misspelled_capability_names_the_ones_that_exist() {
+    fn a_misspelled_capability_names_the_mistake() {
         // `Debug`: `expect_err` prints the Ok value when there is one.
-        #[derive(Debug, serde::Deserialize)]
+        #[derive(Debug, eure::FromEure)]
+        #[eure(crate = ::eure::document)]
         struct Manifest {
             #[allow(dead_code, reason = "the parse is what this test reads")]
             apple: AppleConfig,
         }
-        let err = toml::from_str::<Manifest>("[apple]\ncapabilities = [\"gamecenter\"]\n")
-            .expect_err("an unknown capability")
-            .to_string();
-        assert!(err.contains("game-center"), "{err}");
+        let err = eure::parse_content::<Manifest>(
+            "@ apple\ncapabilities = [\"gamecenter\"]\n",
+            "project.eure".into(),
+        )
+        .expect_err("an unknown capability")
+        .to_string();
+        assert!(err.contains("unknown variant"), "{err}");
+        assert!(err.contains("gamecenter"), "{err}");
     }
 
     #[test]
     fn the_icloud_store_identifier_needs_a_team_because_it_carries_one() {
         let config =
-            config("[apple]\nbundle_id = \"com.studio.game\"\ncapabilities = [\"icloud-kv\"]\n");
+            config("@ apple\nbundle_id = \"com.studio.game\"\ncapabilities = [\"icloud-kv\"]\n");
         let err = config
             .check(Platform::Ios)
             .expect_err("nothing expands $(TeamIdentifierPrefix) here")
@@ -436,7 +474,7 @@ mod tests {
     #[test]
     fn game_center_below_the_version_its_identity_signature_needs_is_refused() {
         let config = config(
-            "[apple]\nbundle_id = \"com.studio.game\"\nmin_os = \"13.0\"\n\
+            "@ apple\nbundle_id = \"com.studio.game\"\nmin_os = \"13.0\"\n\
              capabilities = [\"game-center\"]\n",
         );
         let err = config
@@ -449,7 +487,7 @@ mod tests {
     #[test]
     fn every_capability_writes_its_own_entitlement() {
         let config = config(
-            "[apple]\nbundle_id = \"com.studio.game\"\nteam = \"AB12CD34EF\"\n\
+            "@ apple\nbundle_id = \"com.studio.game\"\nteam = \"AB12CD34EF\"\n\
              min_os = \"15.0\"\n\
              capabilities = [\"applesignin\", \"game-center\", \"icloud-kv\"]\n",
         );
@@ -466,9 +504,9 @@ mod tests {
     #[test]
     fn the_plist_carries_the_projects_identifier_and_its_own_keys() {
         let config = config(
-            "[apple]\nbundle_id = \"com.studio.game\"\ndisplay_name = \"My Game\"\n\
+            "@ apple\nbundle_id = \"com.studio.game\"\ndisplay_name = \"My Game\"\n\
              version = \"2.1\"\nbuild = \"7\"\nmin_os = \"15.0\"\n\
-             [apple.plist]\nITSAppUsesNonExemptEncryption = false\n\
+             @ apple.plist\nITSAppUsesNonExemptEncryption = false\n\
              UISupportedInterfaceOrientations = [\"UIInterfaceOrientationLandscapeLeft\"]\n",
         );
         let text = config.info_plist(Platform::Ios, "Balaur", "game");
@@ -482,7 +520,7 @@ mod tests {
 
     #[test]
     fn a_macos_plist_declares_its_own_minimum_and_no_iphone_keys() {
-        let config = config("[apple]\nbundle_id = \"com.studio.game\"\nmin_macos = \"13.0\"\n");
+        let config = config("@ apple\nbundle_id = \"com.studio.game\"\nmin_macos = \"13.0\"\n");
         let text = config.info_plist(Platform::Macos, "game", "game");
         assert!(text.contains("<key>LSMinimumSystemVersion</key><string>13.0</string>"));
         assert!(!text.contains("LSRequiresIPhoneOS"), "{text}");
@@ -491,7 +529,7 @@ mod tests {
     #[test]
     fn in_app_purchase_writes_no_entitlement_and_still_checks_the_version() {
         let below = config(
-            "[apple]\nbundle_id = \"com.studio.game\"\nmin_os = \"14.0\"\n\
+            "@ apple\nbundle_id = \"com.studio.game\"\nmin_os = \"14.0\"\n\
              capabilities = [\"in-app-purchase\"]\n",
         );
         let err = below
@@ -501,7 +539,7 @@ mod tests {
         assert!(err.contains("15.0"), "{err}");
 
         let config = config(
-            "[apple]\nbundle_id = \"com.studio.game\"\ncapabilities = [\"in-app-purchase\"]\n",
+            "@ apple\nbundle_id = \"com.studio.game\"\ncapabilities = [\"in-app-purchase\"]\n",
         );
         config.check(Platform::Ios).expect("the default is 15.0");
         assert!(

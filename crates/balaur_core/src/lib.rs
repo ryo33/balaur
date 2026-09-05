@@ -17,6 +17,8 @@ pub mod debugger_api;
 pub mod digest;
 pub mod engine;
 pub mod engine_api;
+pub mod eure_runtime;
+pub mod eure_value;
 pub mod file_api;
 pub mod glb;
 pub mod handler;

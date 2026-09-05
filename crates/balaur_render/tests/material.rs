@@ -26,7 +26,7 @@ struct Params { speed: f32, glow: vec4<f32> }
 
 const MATERIAL: &str = r##"type = "material"
 shader = "shaders/wave.wesl"
-params = { speed = 3.0, glow = "#204080" }
+params = { speed => 3.0, glow => "#204080" }
 "##;
 
 const SHADER_3D: &str = r"
@@ -46,7 +46,7 @@ struct Params { warmth: vec4<f32> }
 
 const MATERIAL_3D: &str = r##"type = "material"
 shader = "shaders/lit.wesl"
-params = { warmth = "#ffddaa" }
+params = { warmth => "#ffddaa" }
 "##;
 
 /// A project on disk with one shader and one material naming it.
@@ -55,9 +55,9 @@ fn project() -> tempfile::TempDir {
     std::fs::create_dir_all(dir.path().join("shaders")).unwrap();
     std::fs::create_dir_all(dir.path().join("materials")).unwrap();
     std::fs::write(dir.path().join("shaders/wave.wesl"), SHADER).unwrap();
-    std::fs::write(dir.path().join("materials/wave.toml"), MATERIAL).unwrap();
+    std::fs::write(dir.path().join("materials/wave.eure"), MATERIAL).unwrap();
     std::fs::write(dir.path().join("shaders/lit.wesl"), SHADER_3D).unwrap();
-    std::fs::write(dir.path().join("materials/lit.toml"), MATERIAL_3D).unwrap();
+    std::fs::write(dir.path().join("materials/lit.eure"), MATERIAL_3D).unwrap();
     // A sprite sizes itself from its image, so the project needs a real one.
     std::fs::create_dir_all(dir.path().join("art")).unwrap();
     std::fs::copy(
@@ -92,12 +92,12 @@ fn a_sprite_remembers_the_material_it_names() {
     let app = app(dir.path());
     let entity = node(&app);
     let table =
-        toml::from_str("texture = \"art/sprite.png\"\nmaterial = \"materials/wave.toml\"").unwrap();
+        toml::from_str("texture = \"art/sprite.png\"\nmaterial = \"materials/wave.eure\"").unwrap();
     components::add(&app.engine, entity, "sprite", Some(&table)).unwrap();
 
     let world = app.engine.world();
     let renderable = world.get::<&Renderable2d>(entity).unwrap();
-    assert_eq!(renderable.material, "materials/wave.toml");
+    assert_eq!(renderable.material, "materials/wave.eure");
 }
 
 #[test]
@@ -118,7 +118,7 @@ fn the_material_asset_loads_and_its_shader_links() {
     let dir = project();
     let app = app(dir.path());
     let asset =
-        balaur_core::assets::load_typed::<Material>(&app.engine, "materials/wave.toml").unwrap();
+        balaur_core::assets::load_typed::<Material>(&app.engine, "materials/wave.eure").unwrap();
     assert_eq!(asset.shader, "shaders/wave.wesl");
 
     let source = balaur_core::project::scene_text(&app.engine, &asset.shader).unwrap();
@@ -138,13 +138,13 @@ fn the_material_asset_loads_and_its_shader_links() {
 fn a_material_naming_a_missing_shader_says_which_file() {
     let dir = project();
     std::fs::write(
-        dir.path().join("materials/gone.toml"),
+        dir.path().join("materials/gone.eure"),
         "type = \"material\"\nshader = \"shaders/gone.wesl\"\n",
     )
     .unwrap();
     let app = app(dir.path());
     let asset =
-        balaur_core::assets::load_typed::<Material>(&app.engine, "materials/gone.toml").unwrap();
+        balaur_core::assets::load_typed::<Material>(&app.engine, "materials/gone.eure").unwrap();
     let err = balaur_core::project::scene_text(&app.engine, &asset.shader).unwrap_err();
     assert!(format!("{err:#}").contains("shaders/gone.wesl"), "{err:#}");
 }
@@ -177,14 +177,14 @@ fn a_shape3d_remembers_the_material_it_names() {
     let dir = project();
     let app = app(dir.path());
     let entity = node(&app);
-    let table = toml::from_str("kind = \"ball\"\nmaterial = \"materials/lit.toml\"").unwrap();
+    let table = toml::from_str("kind = \"ball\"\nmaterial = \"materials/lit.eure\"").unwrap();
     components::add(&app.engine, entity, "shape3d", Some(&table)).unwrap();
 
     let world = app.engine.world();
     let renderable = world
         .get::<&balaur_render::Renderable>(entity)
         .expect("a shape3d writes a Renderable");
-    assert_eq!(renderable.material, "materials/lit.toml");
+    assert_eq!(renderable.material, "materials/lit.eure");
 }
 
 #[test]
@@ -192,13 +192,13 @@ fn the_component_writes_the_material_back() {
     let dir = project();
     let app = app(dir.path());
     let entity = node(&app);
-    let table = toml::from_str("kind = \"ball\"\nmaterial = \"materials/lit.toml\"").unwrap();
+    let table = toml::from_str("kind = \"ball\"\nmaterial = \"materials/lit.eure\"").unwrap();
     components::add(&app.engine, entity, "shape3d", Some(&table)).unwrap();
 
     let read = components::get(&app.engine, entity, "shape3d").unwrap();
     assert_eq!(
         read.get("material").and_then(toml::Value::as_str),
-        Some("materials/lit.toml")
+        Some("materials/lit.eure")
     );
 }
 
@@ -207,7 +207,7 @@ fn a_3d_material_links_against_the_mesh_contract() {
     let dir = project();
     let app = app(dir.path());
     let asset =
-        balaur_core::assets::load_typed::<Material>(&app.engine, "materials/lit.toml").unwrap();
+        balaur_core::assets::load_typed::<Material>(&app.engine, "materials/lit.eure").unwrap();
     let source = balaur_core::project::scene_text(&app.engine, &asset.shader).unwrap();
     let compiled = compile(&asset, &source).unwrap();
     assert!(compiled.wgsl.contains("fn fs_main"), "{}", compiled.wgsl);

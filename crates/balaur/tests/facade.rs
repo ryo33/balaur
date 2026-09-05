@@ -7,14 +7,14 @@ fn project(dir: &std::path::Path, language: Option<&str>, script: (&str, &str)) 
     std::fs::create_dir_all(dir.join("scripts")).unwrap();
     let lang = language.map_or(String::new(), |l| format!("language = \"{l}\"\n"));
     std::fs::write(
-        dir.join("project.toml"),
-        format!("name = \"t\"\nmain_scene = \"main.toml\"\n{lang}"),
+        dir.join("project.eure"),
+        format!("name = \"t\"\nmain_scene = \"main.eure\"\n{lang}"),
     )
     .unwrap();
     std::fs::write(
-        dir.join("main.toml"),
+        dir.join("main.eure"),
         format!(
-            "[[nodes]]\nid = \"n\"\nname = \"Root\"\nscript = \"scripts/{}\"\n",
+            "@ nodes[] {{\n  id: n\n  name: Root\n  script: scripts/{}\n}}\n",
             script.0
         ),
     )
@@ -180,7 +180,7 @@ fn build_pack_compiles_with_or_without_a_language_line() {
             pack.scripts.contains_key(&key),
             "{language:?}: {key} is not in the pack"
         );
-        assert!(pack.scenes.contains_key("main.toml"));
+        assert!(pack.scenes.contains_key("main.eure"));
     }
 }
 

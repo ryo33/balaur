@@ -16,30 +16,33 @@ fn run(body: &str) -> Vec<String> {
     let dir = tempfile::tempdir().unwrap();
     std::fs::create_dir_all(dir.path().join("scripts")).unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"p\"\nmain_scene = \"main.toml\"\n",
+        dir.path().join("project.eure"),
+        "name = \"p\"\nmain_scene = \"main.eure\"\n",
     )
     .unwrap();
     std::fs::write(
-        dir.path().join("main.toml"),
-        r#"[[nodes]]
-id = "n_near"
-name = "Near"
-position = [0.0, 6.0, 0.0]
-script = "scripts/s.rn"
+        dir.path().join("main.eure"),
+        r#"
+@ nodes[] {
+  id: n_near
+  name: Near
+  position = [0.0, 6.0, 0.0]
+  script: scripts/s.rn
 
-[nodes.collider3d]
-kind = "ball"
-radius = 0.5
+  @ collider3d
+  kind: ball
+  radius = 0.5
+}
 
-[[nodes]]
-id = "n_far"
-name = "Far"
-position = [0.0, 2.0, 0.0]
+@ nodes[] {
+  id: n_far
+  name: Far
+  position = [0.0, 2.0, 0.0]
 
-[nodes.collider3d]
-kind = "ball"
-radius = 0.5
+  @ collider3d
+  kind: ball
+  radius = 0.5
+}
 "#,
     )
     .unwrap();

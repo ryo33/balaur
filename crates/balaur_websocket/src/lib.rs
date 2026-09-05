@@ -74,18 +74,23 @@ impl Default for SocketOptions {
     }
 }
 
-/// Project-wide defaults, the `[websocket]` table of `project.toml`:
+/// Project-wide defaults, the `@ websocket` section of `project.eure`:
 ///
-/// ```toml
-/// [websocket]
-/// compression = true   # offer permessage-deflate on every connection
+/// ```text
+/// @ websocket
+/// compression = true   // offer permessage-deflate on every connection
 /// ```
 ///
 /// A call's own options override these.
-#[derive(Clone, Debug, serde::Deserialize)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Clone, Debug, eure::FromEure)]
+#[eure(crate = ::eure::document)]
 pub struct WebsocketConfig {
+    #[eure(default = "default_compression")]
     pub compression: bool,
+}
+
+fn default_compression() -> bool {
+    true
 }
 
 impl Default for WebsocketConfig {
@@ -95,24 +100,26 @@ impl Default for WebsocketConfig {
 }
 
 impl WebsocketConfig {
-    /// The `[websocket]` table of the project's manifest, or the defaults when
-    /// the file or the table is missing. A table that does not parse is
-    /// reported and ignored rather than failing the boot over a networking
-    /// setting.
+    /// The `@ websocket` section of the project's manifest, or the defaults
+    /// when the file or the section is missing. A section that does not
+    /// parse is reported and ignored rather than failing the boot over a
+    /// networking setting.
     #[must_use]
     pub fn load(files: &balaur_core::project::ProjectFiles) -> Self {
-        #[derive(serde::Deserialize)]
+        #[derive(eure::FromEure)]
+        #[eure(crate = ::eure::document, allow_unknown_fields)]
         struct Manifest {
-            #[serde(default)]
+            #[eure(default)]
             websocket: WebsocketConfig,
         }
-        let Ok(bytes) = files.read("project.toml") else {
+        let Ok(bytes) = files.read("project.eure") else {
             return Self::default();
         };
-        match toml::from_str::<Manifest>(&String::from_utf8_lossy(&bytes)) {
+        let source = String::from_utf8_lossy(&bytes);
+        match eure::parse_content::<Manifest>(&source, std::path::PathBuf::from("project.eure")) {
             Ok(manifest) => manifest.websocket,
             Err(err) => {
-                tracing::warn!("project.toml [websocket]: {err}; using the defaults");
+                tracing::warn!("project.eure [websocket]: {err}; using the defaults");
                 Self::default()
             }
         }

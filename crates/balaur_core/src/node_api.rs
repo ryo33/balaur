@@ -15,6 +15,7 @@ use glamx::{EulerRot, Quat, Vec3};
 use hecs::Entity;
 
 use crate::engine::{Command, Engine};
+use crate::eure_value::EureValue;
 use crate::scene::{self, Children, GlobalTransform, Name, Parent, ScriptAttachment, Transform};
 
 /// One node operation, as a plain function pointer so the list stays a `const`.
@@ -525,6 +526,13 @@ fn queue_free(eng: &Engine, args: &[Value]) -> Result<Value> {
 
 /// Component parameters travel as TOML, so a script table and a scene file
 /// describe a component the same way.
+///
+/// This stays TOML-shaped rather than [`EureValue`] on purpose: it is the
+/// wire format between `balaur_core` and every plugin's component `apply`
+/// hooks (`balaur_physics`, `balaur_render`, `balaur_ui`, `balaur_anim`, ...),
+/// which is a much larger boundary than the project/scene loader this module
+/// otherwise serves. [`to_eure`]/[`from_eure`] are the ones scene loading
+/// itself uses.
 pub fn to_toml(v: &Value) -> Result<toml::Value> {
     Ok(match v {
         Value::Nil => toml::Value::String(String::new()),
@@ -577,4 +585,168 @@ pub fn from_toml(v: &toml::Value) -> Result<Value> {
                 .collect::<Result<_>>()?,
         ),
     })
+}
+
+/// The [`EureValue`] equivalent of [`to_toml`], for scene/project loading —
+/// the part of the engine that reads `.eure` documents directly rather than
+/// going through the toml-shaped component `apply` boundary.
+pub fn to_eure(v: &Value) -> Result<EureValue> {
+    Ok(match v {
+        Value::Nil => EureValue::string(String::new()),
+        Value::Bool(b) => EureValue::bool(*b),
+        Value::Int(i) => EureValue::integer(*i),
+        Value::Num(n) => EureValue::float(*n),
+        Value::Str(s) => EureValue::string(s.clone()),
+        Value::Node(_) | Value::Callback(_) => {
+            return Err(anyhow!("a node or callback is not component data"))
+        }
+        Value::Many(_) => return Err(anyhow!("several values are not component data")),
+        Value::Bytes(_) => return Err(anyhow!("bytes are not component data")),
+        Value::Vec2(a) => EureValue::array(a.iter().map(|n| EureValue::float(f64::from(*n)))),
+        Value::Vec3(a) => EureValue::array(a.iter().map(|n| EureValue::float(f64::from(*n)))),
+        Value::Color(a) => EureValue::array(a.iter().map(|n| EureValue::float(f64::from(*n)))),
+        Value::List(items) => EureValue::array(
+            items
+                .iter()
+                .map(to_eure)
+                .collect::<Result<Vec<_>>>()?,
+        ),
+        Value::Map(pairs) => EureValue::table(
+            pairs
+                .iter()
+                .map(|(k, val)| Ok((k.clone(), to_eure(val)?)))
+                .collect::<Result<Vec<_>>>()?,
+        ),
+    })
+}
+
+/// The [`EureValue`] equivalent of [`from_toml`].
+pub fn from_eure(v: &EureValue) -> Result<Value> {
+    if let Some(s) = v.as_str() {
+        return Ok(Value::Str(s.to_string()));
+    }
+    if let Some(b) = v.as_bool() {
+        return Ok(Value::Bool(b));
+    }
+    if v.is_table() {
+        return Ok(Value::Map(
+            v.iter_table()
+                .map(|(k, val)| Ok((k, from_eure(&val)?)))
+                .collect::<Result<_>>()?,
+        ));
+    }
+    if v.is_array() {
+        return Ok(Value::List(
+            v.as_array_items()
+                .iter()
+                .map(from_eure)
+                .collect::<Result<_>>()?,
+        ));
+    }
+    if let Some(i) = v.as_integer() {
+        return Ok(Value::Int(i));
+    }
+    if let Some(f) = v.as_float() {
+        return Ok(Value::Num(f));
+    }
+    Ok(Value::Nil)
+}
+
+/// Renders a [`toml::Value`] table as Eure source text, for writing a
+/// definition back to a `.eure` file (`crate::assets::save`).
+///
+/// Every value is written as an object/array literal (`{ "k" => v, ... }` /
+/// `[a, b]`) rather than section syntax (`@ k`): literals nest arbitrarily
+/// without needing to track when a section closes, which is what a definition
+/// written back by a tool — shape unknown ahead of time — actually needs.
+#[must_use]
+pub fn toml_to_eure_text(root: &toml::Value) -> String {
+    let toml::Value::Table(table) = root else {
+        // Every asset definition is a table; nothing here ever hands this a
+        // bare value, so falling back to a single root binding is defensive
+        // rather than a path any caller takes.
+        return format!("= {}\n", eure_literal(root));
+    };
+    let mut out = String::new();
+    for (key, value) in table {
+        out.push_str(&eure_key(key));
+        out.push_str(" = ");
+        out.push_str(&eure_literal(value));
+        out.push('\n');
+    }
+    out
+}
+
+fn eure_literal(value: &toml::Value) -> String {
+    match value {
+        toml::Value::String(s) => eure_string(s),
+        toml::Value::Integer(i) => i.to_string(),
+        toml::Value::Float(f) => {
+            let mut s = f.to_string();
+            if !s.contains(['.', 'e', 'E']) {
+                s.push_str(".0");
+            }
+            s
+        }
+        toml::Value::Boolean(b) => b.to_string(),
+        toml::Value::Datetime(d) => eure_string(&d.to_string()),
+        toml::Value::Array(items) => {
+            let items: Vec<String> = items.iter().map(eure_literal).collect();
+            format!("[{}]", items.join(", "))
+        }
+        toml::Value::Table(table) => {
+            let entries: Vec<String> = table
+                .iter()
+                .map(|(k, v)| format!("{} => {}", eure_key(k), eure_literal(v)))
+                .collect();
+            format!("{{ {} }}", entries.join(", "))
+        }
+    }
+}
+
+fn eure_key(key: &str) -> String {
+    eure_string(key)
+}
+
+fn eure_string(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() + 2);
+    out.push('"');
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            _ => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
+
+/// A [`toml::Value`] built from an [`EureValue`], for the boundary between
+/// `.eure` scene/asset documents and the still-TOML-shaped component and
+/// asset-definition system (see [`to_toml`]'s note).
+pub fn eure_to_toml(v: &EureValue) -> toml::Value {
+    if let Some(s) = v.as_str() {
+        return toml::Value::String(s.to_string());
+    }
+    if let Some(b) = v.as_bool() {
+        return toml::Value::Boolean(b);
+    }
+    if v.is_table() {
+        return toml::Value::Table(
+            v.iter_table()
+                .map(|(k, val)| (k, eure_to_toml(&val)))
+                .collect(),
+        );
+    }
+    if v.is_array() {
+        return toml::Value::Array(v.as_array_items().iter().map(eure_to_toml).collect());
+    }
+    if let Some(i) = v.as_integer() {
+        return toml::Value::Integer(i);
+    }
+    if let Some(f) = v.as_float() {
+        return toml::Value::Float(f);
+    }
+    toml::Value::String(String::new())
 }

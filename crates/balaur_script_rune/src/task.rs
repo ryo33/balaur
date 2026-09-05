@@ -140,9 +140,9 @@ impl RuneHost {
                                 changed.push(key);
                             }
                         }
-                        // Assets and scenes are both TOML; `reload` drops only
+                        // Assets and scenes are both Eure; `reload` drops only
                         // what was cached, so a saved scene changes nothing.
-                        Some("toml") if !assets.contains(&key) => assets.push(key),
+                        Some("eure") if !assets.contains(&key) => assets.push(key),
                         // A shader is source a material links, not an asset
                         // anything parsed: there is nothing cached to drop,
                         // only the counter its material watches.

@@ -37,7 +37,7 @@ pub fn content_hash(bytes: &[u8]) -> String {
 
 #[derive(Default, Clone, Debug)]
 pub struct Pack {
-    /// `project.toml` source.
+    /// `project.eure` source.
     pub manifest: String,
     /// Scene sources keyed by project-relative path.
     ///
@@ -61,8 +61,8 @@ impl Pack {
         project_root: &Path,
         compiler: &dyn balaur_script::ScriptCompiler,
     ) -> Result<Self> {
-        let manifest = std::fs::read_to_string(project_root.join("project.toml"))
-            .with_context(|| format!("no project.toml in {}", project_root.display()))?;
+        let manifest = std::fs::read_to_string(project_root.join("project.eure"))
+            .with_context(|| format!("no project.eure in {}", project_root.display()))?;
         let mut pack = Self {
             manifest,
             ..Default::default()
@@ -79,7 +79,7 @@ impl Pack {
                 }
                 // `scenes` is the pack's text map: scene documents, asset
                 // documents and shader sources all read back through it.
-                Some("toml") if rel != "project.toml" => {
+                Some("eure") if rel != "project.eure" => {
                     pack.scenes.insert(rel, std::fs::read_to_string(&path)?);
                 }
                 Some("wesl") => {

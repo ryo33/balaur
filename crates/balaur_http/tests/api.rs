@@ -140,8 +140,8 @@ fn a_failed_transfer_reports_an_error_event() {
 fn the_http_table_of_the_manifest_sets_the_default_timeout() {
     let dir = tempfile::tempdir().unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"t\"\nmain_scene = \"scenes/main.toml\"\n\n[http]\ntimeout = 2.5\n",
+        dir.path().join("project.eure"),
+        "name = \"t\"\nmain_scene = \"scenes/main.eure\"\n\n@ http\ntimeout = 2.5\n",
     )
     .unwrap();
     let app = app_with_http(dir.path());

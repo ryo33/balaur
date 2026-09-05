@@ -130,15 +130,16 @@ fn an_inline_library_autoplays_the_entry_it_names() {
 fn an_autoplay_that_cannot_load_leaves_the_rest_of_the_scene_standing() {
     let app = app();
     let source = r#"
-[[nodes]]
-name = "Box"
+@ nodes[] {
+  name: Box
 
-[nodes.animation]
-library = "animations/nothing_here.toml"
-autoplay = "idle"
+  @ animation
+  library: animations/nothing_here.eure
+  autoplay: idle
+}
 
-[[nodes]]
-name = "Ground"
+@ nodes[]
+name: Ground
 "#;
     let root = app.engine.root();
     project::instantiate_scene(&app.engine, source, root, false).unwrap();
@@ -170,13 +171,13 @@ fn a_clip_promoted_to_a_file_poses_exactly_as_the_inline_one_did() {
         .insert("type".into(), toml::Value::String("animation_clip".into()));
     std::fs::create_dir_all(dir.path().join("animations")).unwrap();
     std::fs::write(
-        dir.path().join("animations/box.toml"),
-        toml::to_string(&promoted).unwrap(),
+        dir.path().join("animations/box.eure"),
+        balaur_core::node_api::toml_to_eure_text(&promoted),
     )
     .unwrap();
-    assets::reload(&app.engine, "animations/box.toml").unwrap();
+    assets::reload(&app.engine, "animations/box.eure").unwrap();
 
-    let external = animated(&app, "External", "library = \"animations/box.toml\"");
+    let external = animated(&app, "External", "library = \"animations/box.eure\"");
     balaur_anim::play(&app.engine, external, "rise").unwrap();
     balaur_anim::pause(&app.engine, external);
     balaur_anim::seek(&app.engine, external, 0.4);
@@ -193,8 +194,8 @@ fn a_clip_promoted_to_a_file_poses_exactly_as_the_inline_one_did() {
 }
 
 /// The editor saves the scene by encoding its document. A clip nested under a
-/// node is the deepest thing that document holds, and TOML is particular about
-/// what may follow a table — so the round trip is pinned rather than assumed.
+/// node is the deepest thing that document holds, so the round trip through
+/// Eure text is pinned rather than assumed.
 #[test]
 fn a_scene_document_holding_an_inline_clip_encodes_and_parses_back() {
     let app = app();
@@ -223,7 +224,7 @@ tracks = [
         toml::Value::Array(vec![node]),
     )]));
 
-    let encoded = toml::to_string(&document).expect("the editor cannot save what it cannot encode");
+    let encoded = balaur_core::node_api::toml_to_eure_text(&document);
     let root = app.engine.root();
     project::instantiate_scene(&app.engine, &encoded, root, false).unwrap();
     let entity = scene::find_node(&app.engine.world(), root, "Box").unwrap();
@@ -249,33 +250,33 @@ fn a_clip_saved_while_it_plays_is_picked_up_without_losing_the_playhead() {
     let dir = tempfile::tempdir().unwrap();
     std::fs::create_dir_all(dir.path().join("animations")).unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"p\"\nmain_scene = \"scenes/main.toml\"\n",
+        dir.path().join("project.eure"),
+        "name = \"p\"\nmain_scene = \"scenes/main.eure\"\n",
     )
     .unwrap();
     let clip = |top: f32| {
         format!(
             r#"type = "animation_clip"
 
-[clips.lift]
+@ clips.lift
 length = 2.0
 tracks = [
-  {{ property = "position", keys = [
-    {{ t = 0.0, value = [0.0, 0.0, 0.0] }},
-    {{ t = 2.0, value = [0.0, {top}, 0.0] }},
+  {{ property => "position", keys => [
+    {{ t => 0.0, value => [0.0, 0.0, 0.0] }},
+    {{ t => 2.0, value => [0.0, {top}, 0.0] }},
   ] }},
 ]
 "#
         )
     };
-    let path = dir.path().join("animations/lift.toml");
+    let path = dir.path().join("animations/lift.eure");
     std::fs::write(&path, clip(10.0)).unwrap();
 
     let mut app = app_in(dir.path());
     let entity = animated(
         &app,
         "Lift",
-        "library = \"animations/lift.toml\"\nautoplay = \"lift\"",
+        "library = \"animations/lift.eure\"\nautoplay = \"lift\"",
     );
     for _ in 0..60 {
         app.tick(1.0 / 60.0);
@@ -287,7 +288,7 @@ tracks = [
     // The clip is rewritten to rise twice as far, and the cache is told, the
     // way the file watcher tells it in dev mode.
     std::fs::write(&path, clip(20.0)).unwrap();
-    assets::reload(&app.engine, "animations/lift.toml").unwrap();
+    assets::reload(&app.engine, "animations/lift.eure").unwrap();
 
     app.tick(1.0 / 60.0);
     let after = height(&app, entity);

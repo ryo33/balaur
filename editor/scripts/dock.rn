@@ -173,7 +173,7 @@ fn asset_look(name, is_dir) {
     if name.ends_with(".rn") {
         return (crate::icons::ui("scriptfile"), "sage");
     }
-    if name.ends_with(".toml") {
+    if name.ends_with(".eure") {
         return (crate::icons::panel("scene"), "accent");
     }
     if name.ends_with(".png") || name.ends_with(".jpg") {
@@ -185,7 +185,7 @@ fn asset_look(name, is_dir) {
 // Opening a file means the thing the editor can actually do with it: jump to
 // the node running a script, or open a scene. Anything else just selects.
 fn open_asset(S, rel) {
-    if rel.ends_with(".toml") && rel.starts_with("scenes/") {
+    if rel.ends_with(".eure") && rel.starts_with("scenes/") {
         if S.scene_rel != rel {
             model::open_scene(S, rel);
         }

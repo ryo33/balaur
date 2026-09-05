@@ -18,13 +18,13 @@ fn run(body: &str) -> (App, Vec<String>) {
     let dir = tempfile::tempdir().unwrap();
     std::fs::create_dir_all(dir.path().join("scripts")).unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        "name = \"r\"\nmain_scene = \"main.toml\"\n",
+        dir.path().join("project.eure"),
+        "name = \"r\"\nmain_scene = \"main.eure\"\n",
     )
     .unwrap();
     std::fs::write(
-        dir.path().join("main.toml"),
-        "[[nodes]]\nid = \"n\"\nname = \"N\"\nscript = \"scripts/s.rn\"\n",
+        dir.path().join("main.eure"),
+        "@ nodes[]\nid: n\nname: N\nscript: scripts/s.rn\n",
     )
     .unwrap();
     std::fs::write(

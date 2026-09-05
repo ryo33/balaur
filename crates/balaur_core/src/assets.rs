@@ -14,8 +14,8 @@
 //!
 //! | Form | Means |
 //! |---|---|
-//! | `"animations/hero.toml"` | the whole file |
-//! | `"animations/hero.toml#run"` | the entry named `run` inside it |
+//! | `"animations/hero.eure"` | the whole file |
+//! | `"animations/hero.eure#run"` | the entry named `run` inside it |
 //! | `"#hero_idle"` | an `[[assets]]` block in the same scene file |
 //!
 //! A fourth, `"#!<hex>"`, is written by nobody: it is what an inline
@@ -33,11 +33,14 @@ use std::any::Any;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use std::collections::HashMap;
+
 use anyhow::{anyhow, Context, Result};
-use serde::Deserialize;
+use eure::FromEure;
 
 use crate::collections::DetHashMap;
 use crate::engine::Engine;
+use crate::eure_value::EureValue;
 use crate::project::ProjectRoot;
 
 /// Parse one asset type's definition table into an object only its plugin
@@ -90,15 +93,16 @@ pub fn directory(eng: &Engine, type_name: &str) -> String {
 }
 
 /// One `[[assets]]` block in a scene document: Godot's `[sub_resource]`.
-#[derive(Deserialize, Clone)]
+#[derive(FromEure, Clone, PartialEq)]
+#[eure(crate = ::eure::document)]
 pub struct SceneAsset {
     /// What `#id` refers to, scoped to the scene declaring it.
     pub id: String,
     /// The asset type name some plugin registered.
-    #[serde(rename = "type")]
+    #[eure(rename = "type")]
     pub type_name: String,
-    #[serde(flatten)]
-    pub body: toml::map::Map<String, toml::Value>,
+    #[eure(flatten)]
+    pub body: HashMap<String, EureValue>,
 }
 
 /// A resolved reference: what the cache is keyed by.
@@ -219,8 +223,8 @@ impl AssetState {
                 Ok(AssetRef::Entry(path.to_string(), entry.to_string()))
             }
             Some(_) => Err(anyhow!(
-                "asset reference '{reference}' is malformed: write \"file.toml\", \
-                 \"file.toml#entry\" or \"#scene_asset_id\""
+                "asset reference '{reference}' is malformed: write \"file.eure\", \
+                 \"file.eure#entry\" or \"#scene_asset_id\""
             )),
             None => Ok(AssetRef::File(text.to_string())),
         }
@@ -344,7 +348,7 @@ pub fn reload(eng: &Engine, reference: &str) -> Result<()> {
         _ => {}
     }
     // Only a reload that actually dropped something is worth telling anyone
-    // about: the file watcher calls this for every `.toml` saved in the
+    // about: the file watcher calls this for every `.eure` saved in the
     // project, most of which no asset was ever cut from.
     if state.definitions.len() + state.parsed.len() != before {
         state.generation = state.generation.wrapping_add(1);
@@ -381,8 +385,7 @@ pub fn save(eng: &Engine, reference: &str, definition: &toml::Value) -> Result<(
         std::fs::create_dir_all(parent)
             .with_context(|| format!("creating {}", parent.display()))?;
     }
-    let text =
-        toml::to_string_pretty(definition).with_context(|| format!("encoding '{reference}'"))?;
+    let text = crate::node_api::toml_to_eure_text(definition);
     std::fs::write(&full, text).with_context(|| format!("writing {}", full.display()))?;
     reload(eng, reference)
 }
@@ -429,7 +432,13 @@ pub fn enter_scene_scope(eng: &Engine, source: &str, blocks: &[SceneAsset]) -> R
         }
         let definition = Definition {
             type_name: Some(block.type_name.clone()),
-            body: toml::Value::Table(block.body.clone()),
+            body: toml::Value::Table(
+                block
+                    .body
+                    .iter()
+                    .map(|(k, v)| (k.clone(), crate::node_api::eure_to_toml(v)))
+                    .collect(),
+            ),
         };
         if entries.insert(block.id.clone(), definition).is_some() {
             return Err(anyhow!("two [[assets]] blocks share the id '{}'", block.id));
@@ -539,7 +548,11 @@ fn entry_of<'a>(document: &'a toml::Value, entry: &str) -> Option<&'a toml::Valu
 /// file resolve the same way and always have.
 fn read_document(eng: &Engine, path: &str) -> Result<toml::Value> {
     let source = crate::project::scene_text(eng, path)?;
-    toml::from_str(&source).with_context(|| format!("parsing asset file '{path}'"))
+    let value: EureValue = crate::eure_runtime::of(eng)
+        .borrow()
+        .parse(std::path::Path::new(path), &source)
+        .with_context(|| format!("parsing asset file '{path}'"))?;
+    Ok(crate::node_api::eure_to_toml(&value))
 }
 
 fn parse(eng: &Engine, key: &AssetRef, reference: &str) -> Result<Rc<dyn Any>> {

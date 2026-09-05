@@ -1,6 +1,6 @@
 // The edited project: scene document model, live mirror scene, save/reset.
-// `S.doc` is plain data parsed from the scene TOML; the mirror is a real node
-// tree from the same TOML (scripts not attached, physics paused until play).
+// `S.doc` is plain data parsed from the scene Eure; the mirror is a real node
+// tree from the same Eure (scripts not attached, physics paused until play).
 
 use crate::history;
 use crate::util;
@@ -389,7 +389,7 @@ fn expand_one(S, out, owner, rel, id_prefix, at_prefix, depth) {
             return;
         }
     };
-    let inner = util::vec(util::obj(toml::parse(text)).get("nodes").unwrap_or([]));
+    let inner = util::vec(util::obj(eure::parse(text)).get("nodes").unwrap_or([]));
     normalize(inner);
     let overrides = util::obj(owner.get("overrides").unwrap_or(#{}));
     for node in inner {
@@ -526,7 +526,7 @@ fn normalize(doc) {
 
 // Load the game project pointed at by `engine::args()[0]`.
 // A read the editor cannot do without: `fs::read` answers `()` for a file it
-// could not open, and `toml::parse` then fails with the type, not the path.
+// could not open, and `eure::parse` then fails with the type, not the path.
 fn must_read(path) {
     let text = fs::read(path);
     if !(text is String) {
@@ -539,13 +539,13 @@ fn must_read(path) {
 pub fn load(S) {
     let root = engine::args()[0];
     S.game_root = root;
-    let manifest = toml::parse(must_read(root + "/project.toml"));
+    let manifest = eure::parse(must_read(root + "/project.eure"));
     S.game_name = manifest.name;
     S.scene_rel = manifest.main_scene;
     // Same for the strings: the catalogue lives under the game's root, not
     // the editor's, and without this every `text_key` draws as its key.
     strings::set_root(root);
-    // The engine read the *editor's* actions from its own project.toml, so
+    // The engine read the *editor's* actions from its own project.eure, so
     // without this every action a played game asks for reads zero.
     let input_some = manifest.get("input");
     if let Some(table) = input_some {
@@ -557,7 +557,7 @@ pub fn load(S) {
         }
     }
     S.scene_path = root + "/" + manifest.main_scene;
-    let doc = toml::parse(must_read(S.scene_path));
+    let doc = eure::parse(must_read(S.scene_path));
     S.doc = util::vec(doc.get("nodes").unwrap_or([]));
     normalize(S.doc);
     expand_instances(S);
@@ -640,7 +640,7 @@ pub fn build_mirror(S) {
     debugger::set_scope(S.mirror);
     // The document, not the file: a mirror read from disk cannot hold an
     // unsaved edit, which left a duplicated node with no live node at all.
-    scene::instantiate(toml::encode(#{ nodes: absolute_files(S, authored(S.doc)) }), S.mirror, #{ scripts: false });
+    scene::instantiate(eure::encode(#{ nodes: absolute_files(S, authored(S.doc)) }), S.mirror, #{ scripts: false });
     physics::set_paused(true);
     S.playing = false;
     S.refs = [];
@@ -759,7 +759,7 @@ pub fn selected_node(S) {
 // Write the document back to the scene file (hot reload on the game side is
 // the game's watcher's business; the editor is a plain writer).
 pub fn save(S) {
-    fs::write(S.scene_path, toml::encode(#{ nodes: authored(S.doc) }));
+    fs::write(S.scene_path, eure::encode(#{ nodes: authored(S.doc) }));
     forget(S, None);
     history::mark_saved(S);
     log::info("saved " + S.scene_rel);
@@ -794,14 +794,14 @@ pub fn prefab_of(S, node) {
 }
 
 // Every scene file under `scenes/`, which is what a prefab can be — the
-// convention the Assets dock already opens on: a `.toml` there is a scene,
+// convention the Assets dock already opens on: a `.eure` there is a scene,
 // anything else is an asset.
 pub fn scene_files(S) {
     let out = [];
     // `fs::list` answers with `{ name, is_dir }`, not bare names.
     for entry in list(S, "scenes") {
         let name = util::obj(entry).get("name").unwrap_or("");
-        if name.ends_with(".toml") {
+        if name.ends_with(".eure") {
             out.push("scenes/" + name);
         }
     }
@@ -846,7 +846,7 @@ pub fn instance_scene(S, rel) {
     log::info("instanced " + rel);
 }
 
-// `scenes/enemy_camp.toml` -> `EnemyCamp`, so a placed prefab is named for
+// `scenes/enemy_camp.eure` -> `EnemyCamp`, so a placed prefab is named for
 // what it is rather than for its path.
 fn prefab_name(rel) {
     let file = util::last_segment(rel);
@@ -939,7 +939,7 @@ pub fn attach_game_scripts(S) {
 pub fn open_scene(S, rel) {
     S.scene_rel = rel;
     S.scene_path = S.game_root + "/" + rel;
-    let doc = toml::parse(fs::read(S.scene_path));
+    let doc = eure::parse(fs::read(S.scene_path));
     S.doc = util::vec(doc.get("nodes").unwrap_or([]));
     normalize(S.doc);
     expand_instances(S);
@@ -1132,7 +1132,7 @@ pub fn copy_selected(S) {
             out[key] = util::copy(value);
         }
     }
-    toml::encode(#{ nodes: [out] })
+    eure::encode(#{ nodes: [out] })
 }
 
 /// Paste a scene document beside the selection. Anything that is not one is
@@ -1140,7 +1140,7 @@ pub fn copy_selected(S) {
 pub fn paste_nodes(S, text) {
     // The clipboard holds whatever the last application put there, so a
     // parse failure is an answer, not an error.
-    let (parsed, doc) = script::attempt(|| toml::parse(text));
+    let (parsed, doc) = script::attempt(|| eure::parse(text));
     if !parsed || !(doc is Object) {
         return false;
     }

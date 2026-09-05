@@ -15,6 +15,7 @@ use std::collections::BTreeMap;
 use anyhow::{anyhow, Result};
 
 use crate::components;
+use crate::eure_value::EureValue;
 use crate::hecs::Entity;
 use crate::Engine;
 
@@ -126,56 +127,65 @@ pub fn unmet_expectations(eng: &Engine, entity: Entity) -> Vec<(String, Vec<Stri
     unmet
 }
 
-/// Parse one preset out of `presets.toml`:
+/// Parse one preset out of `presets.eure`:
 ///
-/// ```toml
-/// [enemy]
+/// ```eure
+/// @ enemy
 /// description = "A patrolling enemy"
 /// tags = ["2d"]
 /// components = [
-///   { component = "sprite", texture = "gfx/enemy.png" },
-///   { component = "body2d", kind = "dynamic" },
+///   { component => "sprite", texture => "gfx/enemy.png" },
+///   { component => "body2d", kind => "dynamic" },
 /// ]
 /// ```
 ///
 /// Each entry names a `component` and carries that component's own
 /// properties inline, so it reads like the scene file it stands in for.
-pub fn from_toml(name: &str, body: &toml::Value) -> Result<PresetDef> {
-    let table = body
-        .as_table()
-        .ok_or_else(|| anyhow!("preset '{name}' should be a table"))?;
-    let description = table
+pub fn from_eure(name: &str, body: &EureValue) -> Result<PresetDef> {
+    if !body.is_table() {
+        return Err(anyhow!("preset '{name}' should be a table"));
+    }
+    let description = body
         .get("description")
-        .and_then(|v| v.as_str())
+        .as_ref()
+        .and_then(EureValue::as_str)
         .unwrap_or(name)
         .to_string();
-    let tags = table
+    let tags = body
         .get("tags")
-        .and_then(|v| v.as_array())
-        .map(|a| {
-            a.iter()
-                .filter_map(|v| v.as_str().map(str::to_string))
+        .map(|v| {
+            v.as_array_items()
+                .iter()
+                .filter_map(EureValue::as_str)
+                .map(str::to_string)
                 .collect()
         })
         .unwrap_or_default();
-    let entries = table
+    let entries = body
         .get("components")
-        .and_then(|v| v.as_array())
         .ok_or_else(|| anyhow!("preset '{name}' needs a `components` array"))?;
+    if !entries.is_array() {
+        return Err(anyhow!("preset '{name}' needs a `components` array"));
+    }
     let mut parts = Vec::new();
-    for entry in entries {
-        let entry = entry
-            .as_table()
-            .ok_or_else(|| anyhow!("preset '{name}': each component is a table"))?;
+    for entry in entries.as_array_items() {
+        if !entry.is_table() {
+            return Err(anyhow!("preset '{name}': each component is a table"));
+        }
         let component = entry
             .get("component")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| anyhow!("preset '{name}': a component entry needs `component`"))?;
+            .as_ref()
+            .and_then(EureValue::as_str)
+            .ok_or_else(|| anyhow!("preset '{name}': a component entry needs `component`"))?
+            .to_string();
         // Everything but the discriminant is the component's own properties.
-        let mut params = entry.clone();
-        params.remove("component");
+        let params: toml::map::Map<String, toml::Value> = entry
+            .iter_table()
+            .filter(|(k, _)| k != "component")
+            .map(|(k, v)| (k, crate::node_api::eure_to_toml(&v)))
+            .collect();
         parts.push(PresetPart {
-            component: component.to_string(),
+            component,
             params: (!params.is_empty()).then_some(toml::Value::Table(params)),
         });
     }

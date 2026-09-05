@@ -3,66 +3,66 @@
 use balaur_core::{App, AppConfig};
 
 const WITH_IDS: &str = r#"
-[[nodes]]
-id = "n_root"
-name = "World"
+@ nodes[]
+id: n_root
+name: World
 
-[[nodes]]
-id = "n_child"
-name = "Player"
-parent = "n_root"
+@ nodes[]
+id: n_child
+name: Player
+parent: n_root
 "#;
 
 /// The same tree after someone renames the parent in the editor.
 const RENAMED: &str = r#"
-[[nodes]]
-id = "n_root"
-name = "Level"
+@ nodes[]
+id: n_root
+name: Level
 
-[[nodes]]
-id = "n_child"
-name = "Player"
-parent = "n_root"
+@ nodes[]
+id: n_child
+name: Player
+parent: n_root
 "#;
 
 /// Hand-edited scenes are missing ids; they are generated, not rejected.
 const NO_ID: &str = r#"
-[[nodes]]
-name = "World"
+@ nodes[]
+name: World
 
-[[nodes]]
-name = "Player"
+@ nodes[]
+name: Player
 "#;
 
 /// Two nodes may share a display name; the second id is regenerated.
 const DUP_NAMES: &str = r#"
-[[nodes]]
-name = "Pupil"
+@ nodes[]
+name: Pupil
 
-[[nodes]]
-name = "Pupil"
+@ nodes[]
+name: Pupil
 "#;
 
 /// Parents must be declared before the children that name them.
 const FORWARD_REF: &str = r#"
-[[nodes]]
-id = "n_child"
-name = "Player"
-parent = "n_root"
+@ nodes[]
+id: n_child
+name: Player
+parent: n_root
 
-[[nodes]]
-id = "n_root"
-name = "World"
+@ nodes[]
+id: n_root
+name: World
 "#;
 
 const DUPLICATE: &str = r#"
-[[nodes]]
-id = "same"
-name = "A"
+@ nodes[]
+id: same
+name: A
 
-[[nodes]]
-id = "same"
-name = "B"
+@ nodes[]
+id: same
+name: B
 "#;
 
 fn load(source: &str) -> anyhow::Result<usize> {

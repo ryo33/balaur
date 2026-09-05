@@ -25,7 +25,7 @@ pub(crate) fn shader_text(eng: &Engine, reference: &str, shader: &str) -> Result
     if material.is_absolute() {
         let mut dir = material.parent();
         while let Some(d) = dir {
-            if d.join("project.toml").exists() {
+            if d.join("project.eure").exists() {
                 let full = d.join(shader);
                 if full.exists() {
                     return Ok(std::fs::read_to_string(full)?);

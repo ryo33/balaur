@@ -20,7 +20,7 @@ pub fn update(this, dt) { this.total = this.total + rollback::input(1); }\n";
 
 fn project(files: &[(&str, &str)]) -> tempfile::TempDir {
     let dir = tempfile::tempdir().unwrap();
-    std::fs::write(dir.path().join("project.toml"), "[project]\nname = \"t\"\n").unwrap();
+    std::fs::write(dir.path().join("project.eure"), "name = \"t\"\n").unwrap();
     for (name, body) in files {
         std::fs::write(dir.path().join(name), body).unwrap();
     }

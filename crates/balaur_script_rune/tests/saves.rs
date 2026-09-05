@@ -9,11 +9,11 @@ use balaur_script::Value;
 fn project(name: &str, manifest_extra: &str, files: &[(&str, &str)]) -> tempfile::TempDir {
     let dir = tempfile::tempdir().unwrap();
     std::fs::write(
-        dir.path().join("project.toml"),
-        format!("name = \"{name}\"\nmain_scene = \"main.toml\"\n{manifest_extra}"),
+        dir.path().join("project.eure"),
+        format!("name = \"{name}\"\nmain_scene = \"main.eure\"\n{manifest_extra}"),
     )
     .unwrap();
-    std::fs::write(dir.path().join("main.toml"), "").unwrap();
+    std::fs::write(dir.path().join("main.eure"), "").unwrap();
     for (file, body) in files {
         let path = dir.path().join(file);
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -142,7 +142,7 @@ fn an_old_save_is_brought_forward_one_version_at_a_time() {
     let name = unique("migrate");
     let dir = project(
         &name,
-        "\n[save]\nversion = 1\n",
+        "\n@ save\nversion = 1\n",
         &[("scripts/saves.rn", MIGRATION)],
     );
     let app = app_in(dir.path());
@@ -154,10 +154,10 @@ fn an_old_save_is_brought_forward_one_version_at_a_time() {
 
     // The same project, three versions on.
     std::fs::write(
-        dir.path().join("project.toml"),
+        dir.path().join("project.eure"),
         format!(
-            "name = \"{name}\"\nmain_scene = \"main.toml\"\n\n\
-             [save]\nversion = 3\nmigrate = \"scripts/saves.rn\"\n"
+            "name = \"{name}\"\nmain_scene = \"main.eure\"\n\n\
+             @ save\nversion = 3\nmigrate = \"scripts/saves.rn\"\n"
         ),
     )
     .unwrap();
@@ -175,15 +175,15 @@ fn an_old_save_is_brought_forward_one_version_at_a_time() {
 #[test]
 fn a_save_from_a_newer_build_is_refused() {
     let name = unique("newer");
-    let dir = project(&name, "\n[save]\nversion = 5\n", &[]);
+    let dir = project(&name, "\n@ save\nversion = 5\n", &[]);
     let app = app_in(dir.path());
     let slot = format!("{name}_slot");
     balaur_core::save::write(&app.engine, &slot, &table(&[("n", Value::Int(1))])).unwrap();
     drop(app);
 
     std::fs::write(
-        dir.path().join("project.toml"),
-        format!("name = \"{name}\"\nmain_scene = \"main.toml\"\n\n[save]\nversion = 2\n"),
+        dir.path().join("project.eure"),
+        format!("name = \"{name}\"\nmain_scene = \"main.eure\"\n\n@ save\nversion = 2\n"),
     )
     .unwrap();
     let app = app_in(dir.path());
@@ -197,15 +197,15 @@ fn a_save_from_a_newer_build_is_refused() {
 #[test]
 fn a_migration_with_no_script_says_so() {
     let name = unique("nomigrate");
-    let dir = project(&name, "\n[save]\nversion = 1\n", &[]);
+    let dir = project(&name, "\n@ save\nversion = 1\n", &[]);
     let app = app_in(dir.path());
     let slot = format!("{name}_slot");
     balaur_core::save::write(&app.engine, &slot, &table(&[("n", Value::Int(1))])).unwrap();
     drop(app);
 
     std::fs::write(
-        dir.path().join("project.toml"),
-        format!("name = \"{name}\"\nmain_scene = \"main.toml\"\n\n[save]\nversion = 2\n"),
+        dir.path().join("project.eure"),
+        format!("name = \"{name}\"\nmain_scene = \"main.eure\"\n\n@ save\nversion = 2\n"),
     )
     .unwrap();
     let app = app_in(dir.path());
