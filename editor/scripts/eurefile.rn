@@ -1,4 +1,4 @@
-// Eure files in the code pane, through the engine's `eure` language server:
+// Eure files in the code pane, through the engine's `eure` language module:
 // tokens, problems, hover cards, completion and definitions. The scene schema
 // is generated from the component registry (ARCHITECTURE.md, "Eure files").
 

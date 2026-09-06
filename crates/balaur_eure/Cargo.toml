@@ -1,6 +1,6 @@
 [package]
 name = "balaur_eure"
-description = "Balaur Eure plugin: the Eure language server, in-process, for the editor"
+description = "Balaur Eure plugin: the Eure language's queries, in-process, for the editor"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,10 +11,7 @@ balaur_core.workspace = true
 balaur_script.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
-serde_json.workspace = true
-eure-ls.workspace = true
 eure.workspace = true
-lsp-types.workspace = true
 glob.workspace = true
 
 [dev-dependencies]

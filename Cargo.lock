@@ -508,10 +508,7 @@ dependencies = [
  "balaur_core",
  "balaur_script",
  "eure",
- "eure-ls",
  "glob",
- "lsp-types",
- "serde_json",
  "tempfile",
  "tracing",
 ]
@@ -1161,16 +1158,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "console_error_panic_hook"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a06aeb73f470f66dcdbf7223caeebb85984942f22f1adb2a088cf9668146bbbc"
-dependencies = [
- "cfg-if",
- "wasm-bindgen",
-]
-
-[[package]]
 name = "const-oid"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1355,15 +1342,6 @@ name = "critical-section"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
-
-[[package]]
-name = "crossbeam-channel"
-version = "0.5.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98b0cc327b5bc766e7fda9c9260cc0fa81b43a8e240440422dff70788e3f9ef1"
-dependencies = [
- "crossbeam-utils",
-]
 
 [[package]]
 name = "crossbeam-deque"
@@ -1885,8 +1863,9 @@ dependencies = [
 
 [[package]]
 name = "eure"
-version = "0.1.9"
-source = "git+https://github.com/Hihaheho/eure.git?rev=8deb8494db7ad424c8f4e313b6046b1628f9a7eb#8deb8494db7ad424c8f4e313b6046b1628f9a7eb"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "868362e62b2a11ecc740de27d963dd84ed4e807e0476d06feefe4d13c11223ae"
 dependencies = [
  "annotate-snippets",
  "anyhow",
@@ -1910,8 +1889,9 @@ dependencies = [
 
 [[package]]
 name = "eure-codegen-ir"
-version = "0.1.9"
-source = "git+https://github.com/Hihaheho/eure.git?rev=8deb8494db7ad424c8f4e313b6046b1628f9a7eb#8deb8494db7ad424c8f4e313b6046b1628f9a7eb"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "995c0bda68065d6d4d009e3406425b03b98d0d2364fd0e0a7ddef20e6924d4a2"
 dependencies = [
  "bon",
  "indexmap",
@@ -1921,8 +1901,9 @@ dependencies = [
 
 [[package]]
 name = "eure-document"
-version = "0.1.9"
-source = "git+https://github.com/Hihaheho/eure.git?rev=8deb8494db7ad424c8f4e313b6046b1628f9a7eb#8deb8494db7ad424c8f4e313b6046b1628f9a7eb"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "797884cebf073954d8cc85abb81bd3df1fe8fe045ed9b1af63e09f026746b36f"
 dependencies = [
  "indexmap",
  "num-bigint",
@@ -1933,8 +1914,9 @@ dependencies = [
 
 [[package]]
 name = "eure-env"
-version = "0.1.9"
-source = "git+https://github.com/Hihaheho/eure.git?rev=8deb8494db7ad424c8f4e313b6046b1628f9a7eb#8deb8494db7ad424c8f4e313b6046b1628f9a7eb"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2711fead0f057f73bb7253df6a15dfd2a5acedce7d5e708d0b39d496bc9012ea"
 dependencies = [
  "chrono",
  "eros",
@@ -1951,8 +1933,9 @@ dependencies = [
 
 [[package]]
 name = "eure-fmt"
-version = "0.1.9"
-source = "git+https://github.com/Hihaheho/eure.git?rev=8deb8494db7ad424c8f4e313b6046b1628f9a7eb#8deb8494db7ad424c8f4e313b6046b1628f9a7eb"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "79554eb5f911ebb3a491541ad5244eb43e9bbe6ae0703b5216b8e573e855d5a1"
 dependencies = [
  "eure-document",
  "eure-tree",
@@ -1960,45 +1943,19 @@ dependencies = [
 
 [[package]]
 name = "eure-lint"
-version = "0.1.9"
-source = "git+https://github.com/Hihaheho/eure.git?rev=8deb8494db7ad424c8f4e313b6046b1628f9a7eb#8deb8494db7ad424c8f4e313b6046b1628f9a7eb"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bcf60d196ca8e5c6a64120c82a3a6665aa4bec3f04d6a59d415cd7036624d12f"
 dependencies = [
  "eure-tree",
  "thiserror 2.0.20",
 ]
 
 [[package]]
-name = "eure-ls"
-version = "0.1.9"
-source = "git+https://github.com/Hihaheho/eure.git?rev=8deb8494db7ad424c8f4e313b6046b1628f9a7eb#8deb8494db7ad424c8f4e313b6046b1628f9a7eb"
-dependencies = [
- "anyhow",
- "console_error_panic_hook",
- "crossbeam-channel",
- "eure",
- "eure-env",
- "eure-schema",
- "getrandom 0.3.4",
- "glob",
- "js-sys",
- "lsp-server",
- "lsp-types",
- "percent-encoding",
- "query-flow",
- "serde",
- "serde-wasm-bindgen",
- "serde_json",
- "tracing",
- "tracing-subscriber",
- "url",
- "wasm-bindgen",
- "web-sys",
-]
-
-[[package]]
 name = "eure-macros"
-version = "0.1.9"
-source = "git+https://github.com/Hihaheho/eure.git?rev=8deb8494db7ad424c8f4e313b6046b1628f9a7eb#8deb8494db7ad424c8f4e313b6046b1628f9a7eb"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "98f06dc10b62fdc8b65f0d25b7a0aafd3a505ae07910b28e482d443cf384620d"
 dependencies = [
  "convert_case 0.10.0",
  "darling 0.23.0",
@@ -2011,8 +1968,9 @@ dependencies = [
 
 [[package]]
 name = "eure-parol"
-version = "0.1.9"
-source = "git+https://github.com/Hihaheho/eure.git?rev=8deb8494db7ad424c8f4e313b6046b1628f9a7eb#8deb8494db7ad424c8f4e313b6046b1628f9a7eb"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b107a2463dd47053ba95a5dff09fb8dcc32879508cc3cbc81f335c0d1e2a8b10"
 dependencies = [
  "anyhow",
  "eure-tree",
@@ -2024,8 +1982,9 @@ dependencies = [
 
 [[package]]
 name = "eure-schema"
-version = "0.1.9"
-source = "git+https://github.com/Hihaheho/eure.git?rev=8deb8494db7ad424c8f4e313b6046b1628f9a7eb#8deb8494db7ad424c8f4e313b6046b1628f9a7eb"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86fd331c46c07a82a50a0faced778c724d1c1bef69a63b4f838cd6830d93e6ab"
 dependencies = [
  "ahash",
  "convert_case 0.9.0",
@@ -2042,8 +2001,9 @@ dependencies = [
 
 [[package]]
 name = "eure-tree"
-version = "0.1.9"
-source = "git+https://github.com/Hihaheho/eure.git?rev=8deb8494db7ad424c8f4e313b6046b1628f9a7eb#8deb8494db7ad424c8f4e313b6046b1628f9a7eb"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5cc916db942afa9a3d7c5bc6a832b27461d9453b290d047ab916294721622ac4"
 dependencies = [
  "ahash",
  "bon",
@@ -2143,15 +2103,6 @@ dependencies = [
  "crc32fast",
  "miniz_oxide 0.9.1",
  "zlib-rs",
-]
-
-[[package]]
-name = "fluent-uri"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17c704e9dbe1ddd863da1e6ff3567795087b1eb201ce80d8fa81162e1516500d"
-dependencies = [
- "bitflags 1.3.2",
 ]
 
 [[package]]
@@ -3487,32 +3438,6 @@ name = "lru-slab"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "112b39cec0b298b6c1999fee3e31427f74f676e4cb9879ed1a121b43661a4154"
-
-[[package]]
-name = "lsp-server"
-version = "0.7.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d6ada348dbc2703cbe7637b2dda05cff84d3da2819c24abcb305dd613e0ba2e"
-dependencies = [
- "crossbeam-channel",
- "log",
- "serde",
- "serde_derive",
- "serde_json",
-]
-
-[[package]]
-name = "lsp-types"
-version = "0.97.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53353550a17c04ac46c585feb189c2db82154fc84b79c7a66c96c2c644f66071"
-dependencies = [
- "bitflags 1.3.2",
- "fluent-uri",
- "serde",
- "serde_json",
- "serde_repr",
-]
 
 [[package]]
 name = "mach2"
@@ -6003,17 +5928,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde-wasm-bindgen"
-version = "0.6.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8302e169f0eddcc139c70f139d19d6467353af16f9fce27e8c30158036a1e16b"
-dependencies = [
- "js-sys",
- "serde",
- "wasm-bindgen",
-]
-
-[[package]]
 name = "serde_arrays"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6053,17 +5967,6 @@ dependencies = [
  "serde",
  "serde_core",
  "zmij",
-]
-
-[[package]]
-name = "serde_repr"
-version = "0.1.21"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d3b1629de253c70a0508c3899572da79ca359fdab27c7920ff00406df418906"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 3.0.4",
 ]
 
 [[package]]

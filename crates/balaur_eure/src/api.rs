@@ -1,4 +1,4 @@
-//! `eure.*` bindings: the language server's answers as script values.
+//! `eure.*` bindings: the language's answers as script values.
 //!
 //! Every position is `{ line, column }`, both from one, the column in
 //! characters — the spelling the editor's gutter and `lint` already use.
@@ -95,7 +95,7 @@ fn at(line: i64, column: i64) -> Span {
 /// `eure.*`: documents in, tokens, problems and answers about a position out.
 pub(crate) fn install_eure_api(m: &mut dyn Bindings<Engine>) {
     m.module_doc(
-        "The Eure language server, running inside the engine. A script opens a \
+        "The Eure language, running inside the engine. A script opens a \
          file's text, then asks about it: highlighting, problems, what a \
          position means, what could be typed there, and where it is defined. \
          Paths are project-relative or absolute; positions are `{ line, \
@@ -106,7 +106,7 @@ pub(crate) fn install_eure_api(m: &mut dyn Bindings<Engine>) {
         ("open", &[], "", "Open `path` with `text`, or replace its text when already open. Queries and problems are about the text last given here."),
         ("close", &[], "", "Forget an open document and its problems."),
         ("tokens", &[], "", "Highlighting for an open document: `{ line, column, length, kind, modifiers }` per run, `kind` one of the Eure token names."),
-        ("diagnostics", &[], "", "The problems the server reports for an open document: `{ line, column, severity, message }`, `severity` `error`, `warning`, `info` or `hint`."),
+        ("diagnostics", &[], "", "The problems in an open document: `{ line, column, severity, message }`, `severity` `error`, `warning`, `info` or `hint`."),
         ("hover", &[], "", "What the position means, as `{ text, from, to }` markdown over the range it applies to, or nil."),
         ("completion", &[], "", "What could be typed at the position: `{ label, kind, detail, documentation, text, from, to }`, `text` replacing `from..to`."),
         ("definition", &[], "", "Where the thing at the position is defined: `{ file, from, to }` per target, `file` absolute."),
@@ -131,7 +131,7 @@ pub(crate) fn install_eure_api(m: &mut dyn Bindings<Engine>) {
     });
     m.function("tokens", |eng: &Engine, path: String| {
         let state = eng.resource::<EureState>();
-        let tokens = state.borrow_mut().tokens(&path)?;
+        let tokens = state.borrow().tokens(&path)?;
         Ok(Value::List(tokens.into_iter().map(token).collect()))
     });
     m.function("diagnostics", |eng: &Engine, path: String| {
@@ -143,7 +143,7 @@ pub(crate) fn install_eure_api(m: &mut dyn Bindings<Engine>) {
         "hover",
         |eng: &Engine, (path, line, column): (String, i64, i64)| {
             let state = eng.resource::<EureState>();
-            let answer = state.borrow_mut().hover(&path, at(line, column))?;
+            let answer = state.borrow().hover(&path, at(line, column))?;
             Ok(answer.map_or(Value::Nil, hover))
         },
     );
@@ -151,7 +151,7 @@ pub(crate) fn install_eure_api(m: &mut dyn Bindings<Engine>) {
         "completion",
         |eng: &Engine, (path, line, column): (String, i64, i64)| {
             let state = eng.resource::<EureState>();
-            let items = state.borrow_mut().completion(&path, at(line, column))?;
+            let items = state.borrow().completion(&path, at(line, column))?;
             Ok(Value::List(items.into_iter().map(completion).collect()))
         },
     );
@@ -159,7 +159,7 @@ pub(crate) fn install_eure_api(m: &mut dyn Bindings<Engine>) {
         "definition",
         |eng: &Engine, (path, line, column): (String, i64, i64)| {
             let state = eng.resource::<EureState>();
-            let targets = state.borrow_mut().definition(&path, at(line, column))?;
+            let targets = state.borrow().definition(&path, at(line, column))?;
             Ok(Value::List(targets.iter().map(location).collect()))
         },
     );

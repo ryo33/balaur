@@ -1,6 +1,6 @@
-//! The language server driven the way the editor drives it: a project on
-//! disk, a schema bound through a workspace config the project does not
-//! have, and every answer arriving in the call that asked.
+//! The language driven the way the editor drives it: a project on disk, a
+//! schema bound through a workspace config the project does not have, and
+//! every answer arriving in the call that asked.
 
 use balaur_eure::{EureState, Span};
 

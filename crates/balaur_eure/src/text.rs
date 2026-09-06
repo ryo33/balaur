@@ -1,13 +1,10 @@
-//! Paths, URIs and positions, in the two spellings the seam needs.
+//! Paths and positions, in the two spellings the seam needs.
 //!
-//! The language server counts lines from zero and columns in UTF-16 units;
-//! scripts and the editor count lines from one and columns in characters.
-//! Everything crossing the seam goes through here.
+//! The language's queries count byte offsets into a file; scripts and the
+//! editor count lines from one and columns in characters. Everything
+//! crossing the seam goes through here.
 
-use std::fmt::Write as _;
-use std::path::{Component, Path, PathBuf};
-
-use lsp_types::Position;
+use std::path::{Component, PathBuf};
 
 /// A 1-based line and a 1-based character column, the editor's spelling.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -33,108 +30,47 @@ pub(crate) fn absolute(path: &str) -> PathBuf {
     out
 }
 
-/// A `file://` URI for `path`, escaped the way `eure-ls` escapes its own.
-pub(crate) fn path_to_uri(path: &Path) -> String {
-    let text = path.to_string_lossy();
-    let mut escaped = String::with_capacity(text.len());
-    for byte in text.bytes() {
-        let keep = byte.is_ascii_graphic() && !matches!(byte, b'#' | b'?' | b'%');
-        if keep {
-            escaped.push(char::from(byte));
-        } else {
-            let _ = write!(escaped, "%{byte:02X}");
-        }
-    }
-    if escaped.starts_with('/') {
-        format!("file://{escaped}")
-    } else {
-        format!("file:///{escaped}")
-    }
-}
-
-/// The path a `file://` URI names; a Windows drive keeps its letter.
-pub(crate) fn uri_to_path(uri: &str) -> PathBuf {
-    let raw = if let Some(rest) = uri.strip_prefix("file:///") {
-        if rest.as_bytes().get(1) == Some(&b':') {
-            rest.to_string()
-        } else {
-            format!("/{rest}")
-        }
-    } else {
-        uri.strip_prefix("file://").unwrap_or(uri).to_string()
-    };
-    PathBuf::from(percent_decode(&raw))
-}
-
-fn percent_decode(text: &str) -> String {
-    let bytes = text.as_bytes();
-    let mut out = Vec::with_capacity(bytes.len());
-    let mut i = 0;
-    while i < bytes.len() {
-        let decoded = (bytes[i] == b'%' && i + 2 < bytes.len())
-            .then(|| std::str::from_utf8(&bytes[i + 1..i + 3]).ok())
-            .flatten()
-            .and_then(|hex| u8::from_str_radix(hex, 16).ok());
-        if let Some(byte) = decoded {
-            out.push(byte);
-            i += 3;
-        } else {
-            out.push(bytes[i]);
-            i += 1;
-        }
-    }
-    String::from_utf8_lossy(&out).into_owned()
-}
-
-/// The text of 0-based `line`, without its terminator; empty past the end.
-fn line_text(text: &str, line: usize) -> &str {
-    text.split('\n')
-        .nth(line)
-        .map_or("", |l| l.strip_suffix('\r').unwrap_or(l))
-}
-
-/// UTF-16 units in the first `chars` characters of `line`.
-fn utf16_of_chars(line: &str, chars: usize) -> u32 {
-    line.chars().take(chars).map(|c| c.len_utf16() as u32).sum()
-}
-
-/// Characters in the first `units` UTF-16 units of `line`, clamped.
-fn chars_of_utf16(line: &str, units: u32) -> usize {
-    let mut seen = 0u32;
-    let mut count = 0usize;
-    for c in line.chars() {
-        if seen >= units {
-            break;
-        }
-        seen += c.len_utf16() as u32;
-        count += 1;
-    }
-    count
-}
-
-/// The server's position for the editor's, against the document `text`.
-pub(crate) fn to_lsp(text: &str, at: Span) -> Position {
-    let line = at.line.saturating_sub(1);
-    let character = utf16_of_chars(line_text(text, line), at.column.saturating_sub(1));
-    Position {
-        line: line as u32,
-        character,
-    }
-}
-
-/// The editor's position for the server's, against the document `text`.
-pub(crate) fn from_lsp(text: &str, at: Position) -> Span {
-    let line = at.line as usize;
+/// The editor's position of byte `offset` in `text`, clamped to the end.
+pub(crate) fn span_at(text: &str, offset: usize) -> Span {
+    let offset = offset.min(text.len());
+    let before = &text[..floor_char_boundary(text, offset)];
+    let line_start = before.rfind('\n').map_or(0, |i| i + 1);
     Span {
-        line: line + 1,
-        column: chars_of_utf16(line_text(text, line), at.character) + 1,
+        line: before.matches('\n').count() + 1,
+        column: before[line_start..].chars().count() + 1,
     }
 }
 
-/// Characters covered by `length` UTF-16 units starting at `start` on `line`.
-pub(crate) fn char_length(text: &str, line: u32, start: u32, length: u32) -> usize {
-    let line = line_text(text, line as usize);
-    chars_of_utf16(line, start + length) - chars_of_utf16(line, start)
+/// The byte offset of the editor's position in `text`, clamped to the end
+/// of its line and to the end of the text.
+pub(crate) fn offset_of(text: &str, at: Span) -> usize {
+    let mut start = 0;
+    for (n, line) in text.split('\n').enumerate() {
+        if n + 1 == at.line {
+            return start
+                + line
+                    .char_indices()
+                    .nth(at.column.saturating_sub(1))
+                    .map_or(line.len(), |(i, _)| i);
+        }
+        start += line.len() + 1;
+    }
+    text.len()
+}
+
+/// Characters between two byte offsets of `text`.
+pub(crate) fn char_length(text: &str, start: usize, end: usize) -> usize {
+    let start = floor_char_boundary(text, start.min(text.len()));
+    let end = floor_char_boundary(text, end.min(text.len()));
+    text[start..end.max(start)].chars().count()
+}
+
+fn floor_char_boundary(text: &str, index: usize) -> usize {
+    let mut i = index.min(text.len());
+    while !text.is_char_boundary(i) {
+        i -= 1;
+    }
+    i
 }
 
 #[cfg(test)]
@@ -142,19 +78,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_uri_round_trips_a_path_with_spaces_and_hashes() {
-        let path = PathBuf::from("/tmp/my game/scene #1.eure");
-        assert_eq!(uri_to_path(&path_to_uri(&path)), path);
+    fn positions_count_bytes_for_the_queries_and_chars_for_the_editor() {
+        let text = "a\n😀b c\n";
+        let at = Span { line: 2, column: 3 };
+        let offset = offset_of(text, at);
+        assert_eq!(offset, 2 + "😀b".len());
+        assert_eq!(span_at(text, offset), at);
+        assert_eq!(char_length(text, 2, offset), 2);
     }
 
     #[test]
-    fn positions_count_utf16_units_for_the_server_and_chars_for_the_editor() {
-        let text = "a\n😀b c\n";
-        let at = Span { line: 2, column: 3 };
-        let lsp = to_lsp(text, at);
-        assert_eq!((lsp.line, lsp.character), (1, 3));
-        assert_eq!(from_lsp(text, lsp), at);
-        assert_eq!(char_length(text, 1, 0, 3), 2);
+    fn a_column_past_the_line_end_stops_at_the_newline() {
+        let text = "ab\ncd";
+        assert_eq!(offset_of(text, Span { line: 1, column: 9 }), 2);
+        assert_eq!(offset_of(text, Span { line: 9, column: 1 }), 5);
+        assert_eq!(span_at(text, 99), Span { line: 2, column: 3 });
     }
 
     #[test]
