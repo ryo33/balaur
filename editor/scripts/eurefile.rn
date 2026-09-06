@@ -1,0 +1,567 @@
+// Eure files in the code pane, through the engine's `eure` language server:
+// tokens, problems, hover cards, completion and definitions. The scene schema
+// is generated from the component registry (ARCHITECTURE.md, "Eure files").
+
+use crate::docks as dock;
+use crate::inputview;
+use crate::model;
+use crate::shell;
+use crate::style;
+use crate::util;
+
+// How long the pointer rests on a token before its card shows.
+const HOVER_DELAY = 0.35;
+const TRIGGERS = "@.$=:";
+
+/// The module's own slice of `S`, at `S.eurefile`.
+pub fn state() {
+    #{
+        // Whether the game root is a workspace of the server yet.
+        ready: false,
+        // The text last handed to the server, per game-relative file.
+        opened: #{},
+        // Tokens of the pane's file, and the text they were computed from.
+        tokens: [], tokens_for: "",
+        // The hover card: the position under the pointer, when it got there,
+        // the answer, and the rect the card was drawn in.
+        hover_key: "", hover_since: -1.0, hover: (), hover_rect: (),
+        // The completion popup: `#{ items, from, to, chosen }`, or nil.
+        popup: (),
+        // A caret to place once the file's editor has drawn: `#{ rel, line, column }`.
+        jump: (),
+    }
+}
+
+pub fn abs(S, rel) {
+    S.game_root + "/" + rel
+}
+
+fn editor_id(S, rel) {
+    "edit:" + abs(S, rel)
+}
+
+// Every `.eure` file in the game, game-relative and in listing order.
+pub fn files(S) {
+    let out = [];
+    walk(S, "", out, 0);
+    out
+}
+
+fn walk(S, dir, out, depth) {
+    if depth > 4 {
+        return;
+    }
+    for f in model::list(S, dir) {
+        let rel = if dir == "" { f.name } else { dir + "/" + f.name };
+        if f.is_dir {
+            if f.name != "target" && f.name != "export" && f.name != "node_modules" {
+                walk(S, rel, out, depth + 1);
+            }
+        } else if f.name.ends_with(".eure") {
+            out.push(rel);
+        }
+    }
+}
+
+/// Show `rel` in the code pane.
+pub fn open(S, rel) {
+    S.eure_rel = rel;
+    S.eurefile.popup = ();
+    S.eurefile.hover = ();
+    shell::set_persona(S, "script");
+}
+
+/// Show `rel` with the caret on `line`.
+pub fn open_at(S, rel, line) {
+    open(S, rel);
+    S.eurefile.jump = #{ rel: rel, line: line, column: 1 };
+}
+
+/// Back to the selected node's script.
+pub fn close(S) {
+    S.eure_rel = "";
+    S.eurefile.popup = ();
+    S.eurefile.hover = ();
+}
+
+// The game root becomes a workspace once. A game with its own `Eure.eure`
+// keeps it; otherwise the editor binds its schemas to the scene language's
+// files, with the scene schema generated from what is registered.
+fn ensure_workspace(S) {
+    if S.eurefile.ready {
+        return;
+    }
+    S.eurefile.ready = true;
+    if fs::exists(abs(S, "Eure.eure")) {
+        eure::workspace(S.game_root, ());
+        return;
+    }
+    let generated = engine::user_data_dir() + "/eure/scene.schema.eure";
+    fs::write(generated, scene_schema(S));
+    let project = fs::absolute("schemas/project.schema.eure");
+    eure::workspace(S.game_root, format!(
+        "@ targets.scenes\nglobs = [\"scenes/**/*.eure\"]\nschema = \"{}\"\n\n@ targets.project\nglobs = [\"project.eure\"]\nschema = \"{}\"\n",
+        slashes(generated), slashes(project)));
+}
+
+// Eure strings escape with backslashes, and Windows paths are full of them.
+fn slashes(path) {
+    path.replace("\\", "/")
+}
+
+fn quoted(text) {
+    "\"" + text.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ") + "\""
+}
+
+// The Eure type of one component property; an enum names a type defined
+// beside the component.
+fn property_type(component, name, spec) {
+    match spec.get("type").unwrap_or("string") {
+        "float" => "`float`",
+        "bool" => "`boolean`",
+        "enum" => format!("`$types.{}_{}`", component, name),
+        "flags" => "[`text`]",
+        "vec2" => "`$types.vec2`",
+        "vec3" => "`$types.vec3`",
+        "color" => "`$types.color`",
+        "asset" => "`any`",
+        _ => "`text`",
+    }
+}
+
+fn enum_type(out, component, name, spec) {
+    out.push(format!("@ $types.{}_{}\n$variant: union\n$interop.variant-repr = \"untagged\"", component, name));
+    for option in util::vec(spec.get("options").unwrap_or([])) {
+        // A bare string is a literal type; quoted, since `2d` is no identifier.
+        out.push("variants." + quoted(option) + " = " + quoted(option));
+    }
+    out.push("");
+}
+
+// One component: a record of its properties, or a union of that record and
+// its shorthand scalar when it has one (`body3d: static`).
+fn component_type(out, name, schema) {
+    let shorthand = ();
+    for prop in util::keys_sorted(schema) {
+        let spec = util::obj(schema[prop]);
+        if spec.get("shorthand").unwrap_or(false) {
+            shorthand = prop;
+        }
+        if spec.get("type").unwrap_or("") == "enum" {
+            enum_type(out, name, prop, spec);
+        }
+    }
+    let record = if shorthand is String {
+        out.push(format!("@ $types.{}\n$variant: union\n$interop.variant-repr = \"untagged\"", name));
+        out.push(format!("variants.short = {}\n", property_type(name, shorthand, util::obj(schema[shorthand]))));
+        format!("@ $types.{}.variants.full", name)
+    } else {
+        format!("@ $types.{}", name)
+    };
+    out.push(record);
+    for prop in util::keys_sorted(schema) {
+        let spec = util::obj(schema[prop]);
+        out.push(format!("{} = {}\n{}.$optional = true", prop, property_type(name, prop, spec), prop));
+        if let Some(doc) = spec.get("description") {
+            out.push(format!("{}.$description = {}", prop, quoted(doc)));
+        }
+    }
+    out.push("");
+}
+
+// The scene schema: the node keys the engine reads, then one optional
+// field per registered component.
+pub fn scene_schema(S) {
+    let out = [
+        "// Generated by the Balaur editor from the component registry; do not edit.",
+        "assets = [`any`]\nassets.$optional = true\nnodes = [`$types.node`]\n",
+        "@ $types.vec2\n$variant: array\nitem = `float`\nmin-length = 2\nmax-length = 2\n",
+        "@ $types.vec3\n$variant: array\nitem = `float`\nmin-length = 3\nmax-length = 3\n",
+        "@ $types.color\n$variant: union\n$interop.variant-repr = \"untagged\"\nvariants.hex = `text`\nvariants.channels = [`float`]\n",
+        "@ $types.script\n$variant: union\n$interop.variant-repr = \"untagged\"\nvariants.path = `text`\n",
+        "@ $types.script.variants.table\nsource = `text`\nprops = `any`\nprops.$optional = true\n",
+        "@ $types.node_color\n$variant: union\n$interop.variant-repr = \"untagged\"\nvariants.short = `$types.color`\n",
+        "@ $types.node_color.variants.full\nrgba = `$types.color`\n",
+        "@ $types.node\nid = `text`\nid.$optional = true\nname = `text`\nparent = `text`\nparent.$optional = true",
+        "position = `$types.vec3`\nposition.$optional = true\nrotation_euler = `$types.vec3`\nrotation_euler.$optional = true\nscale = `$types.vec3`\nscale.$optional = true",
+        "script = `$types.script`\nscript.$optional = true\ninstance = `text`\ninstance.$optional = true\noverrides = `any`\noverrides.$optional = true",
+        // Not a component, but every example tints a node with it: the
+        // channels or a hex string, or the canonical `color.rgba`.
+        "color = `$types.node_color`\ncolor.$optional = true",
+    ];
+    let components = util::vec(scene::component_types());
+    for name in components {
+        out.push(format!("{} = `$types.{}`\n{}.$optional = true", name, name, name));
+    }
+    out.push("");
+    for name in components {
+        component_type(out, name, model::schema(S, name));
+    }
+    util::join(out, "\n")
+}
+
+// Hand the server the text when it differs from what it has.
+fn sync(S, rel, text) {
+    ensure_workspace(S);
+    let same = match S.eurefile.opened.get(rel) {
+        Some(previous) => previous == text,
+        None => false,
+    };
+    if !same {
+        S.eurefile.opened[rel] = text;
+        eure::open(abs(S, rel), text);
+    }
+}
+
+// The text to check: the unsaved buffer when there is one.
+fn text_of(S, rel) {
+    match S.script_buffers.get(abs(S, rel)) {
+        Some(buffer) => Some(buffer),
+        None => model::source(S, rel),
+    }
+}
+
+/// Every problem the server reports over the game's Eure files, in `lint`'s
+/// finding shape; the server only sees a file once this has opened it.
+pub fn findings(S) {
+    let found = [];
+    for rel in files(S) {
+        let text = match text_of(S, rel) {
+            Some(text) => text,
+            None => continue,
+        };
+        sync(S, rel, text);
+        for d in util::vec(eure::diagnostics(abs(S, rel))) {
+            let severity = if d.severity == "error" { "error" } else { "warning" };
+            found.push(#{ file: rel, line: d.line, column: d.column, severity: severity, message: d.message });
+        }
+    }
+    found
+}
+
+/// What a lint sweep would look at, so typing in an Eure file is a change.
+pub fn fingerprint(S) {
+    let parts = [];
+    for rel in files(S) {
+        parts.push(format!("{}:{}", rel, text_of(S, rel).unwrap_or("").len()));
+    }
+    util::join(parts, "|")
+}
+
+fn tokens(S, rel, text) {
+    if S.eurefile.tokens_for != text {
+        S.eurefile.tokens_for = text;
+        sync(S, rel, text);
+        S.eurefile.tokens = util::vec(eure::tokens(abs(S, rel)));
+    }
+    S.eurefile.tokens
+}
+
+/// The code pane's body while an Eure file is open.
+pub fn pane(S, k) {
+    let rel = S.eure_rel;
+    let path = abs(S, rel);
+    let src = match model::source(S, rel) {
+        Some(src) => src,
+        None => {
+            ui::label("missing file: " + rel, style::mono_lg(k.faint));
+            return;
+        }
+    };
+    let id = editor_id(S, rel);
+    let current = S.script_buffers.get(path).unwrap_or(src);
+    let runs = tokens(S, rel, current);
+    // Closures copy their captures; an object carries the flag back out.
+    let typed = #{ now: false };
+    ui::scroll("code", (), || {
+        ui::add_space(12);
+        let (text, changed, _) = ui::code_editor(id, src, #{
+            size: 12.5, gutter_width: 34, gutter_color: k.faint,
+            k_key: k.k_key, k_str: k.k_str, k_num: k.k_num,
+            k_com: k.k_com, k_fn: k.k_fn, k_type: k.k_type,
+            k_punc: k.k_punc,
+            language: "eure", tokens: runs,
+            problems: crate::lint::lines(S, rel, "error"),
+            warnings: crate::lint::lines(S, rel, "warning"),
+            problem_color: k.accent, warning_color: k.sage,
+        });
+        S.script_buffers[path] = text;
+        if changed {
+            S.script_dirty[path] = true;
+            typed.now = true;
+            sync(S, rel, text);
+        }
+        ui::add_space(12);
+    });
+    let jump = S.eurefile.jump;
+    if jump is Object && jump.rel == rel {
+        S.eurefile.jump = ();
+        ui::code_edit(id, jump.line, jump.column, jump.line, jump.column, "");
+    }
+    completion(S, k, rel, id, typed.now);
+    hover(S, k, rel);
+    definition(S, rel, id);
+}
+
+/// Keys the completion popup takes before the editor sees them; called
+/// before the pane draws so the editor never also moves on them.
+pub fn shortcuts(S) {
+    let popup = S.eurefile.popup;
+    if !(popup is Object) {
+        return;
+    }
+    if ui::shortcut("none", "Escape") {
+        S.eurefile.popup = ();
+    } else if ui::shortcut("none", "ArrowDown") {
+        popup.chosen = util::min(popup.chosen + 1, popup.items.len() - 1);
+    } else if ui::shortcut("none", "ArrowUp") {
+        popup.chosen = util::max(popup.chosen - 1, 0);
+    } else if ui::shortcut("none", "Enter") || ui::shortcut("none", "Tab") {
+        accept(S, popup.items[popup.chosen]);
+    }
+}
+
+fn accept(S, item) {
+    let rel = S.eure_rel;
+    let path = abs(S, rel);
+    let text = ui::code_edit(editor_id(S, rel), item.from.line, item.from.column, item.to.line, item.to.column, item.text);
+    S.script_buffers[path] = text;
+    S.script_dirty[path] = true;
+    S.eurefile.popup = ();
+}
+
+// The character before the caret, or nil at a line's start.
+fn before_caret(S, path, caret) {
+    let lines = S.script_buffers.get(path).unwrap_or("").split('\n').collect::<Vec>();
+    let line = lines.get(caret.line - 1).unwrap_or("");
+    let chars = line.chars().collect::<Vec>();
+    if caret.column < 2 || chars.len() < caret.column - 1 {
+        return ();
+    }
+    chars[caret.column - 2]
+}
+
+fn ask_completion(S, rel, caret) {
+    let path = abs(S, rel);
+    sync(S, rel, S.script_buffers.get(path).unwrap_or(""));
+    let items = util::vec(eure::completion(path, caret.line, caret.column));
+    if items.len() == 0 {
+        S.eurefile.popup = ();
+        return;
+    }
+    S.eurefile.popup = #{ items: items, line: caret.line, column: items[0].from.column, chosen: 0 };
+}
+
+fn completion(S, k, rel, id, typed) {
+    let caret = ui::code_caret(id);
+    if !(caret is Object) {
+        S.eurefile.popup = ();
+        return;
+    }
+    if ui::shortcut("ctrl", "Space") {
+        ask_completion(S, rel, caret);
+    } else if typed {
+        let c = before_caret(S, abs(S, rel), caret);
+        if c is char && (TRIGGERS.contains(format!("{}", c)) || c.is_alphanumeric() || c == '_' || c == '-') {
+            ask_completion(S, rel, caret);
+        } else {
+            S.eurefile.popup = ();
+        }
+    }
+    let popup = S.eurefile.popup;
+    if !(popup is Object) {
+        return;
+    }
+    // The caret left the word the popup is about.
+    if caret.line != popup.line || caret.column < popup.column {
+        S.eurefile.popup = ();
+        return;
+    }
+    let shown = popup.items.iter().take(10).collect::<Vec>();
+    ui::overlay("eure-completion", #{
+        x: caret.x - 8.0, y: caret.y + caret.height + 4.0, w: 340,
+        fill: k.panel, stroke: k.line, radius: 8, padding_x: 6, padding_y: 6,
+    }, || {
+        ui::vertical(|| {
+            ui::spacing(0, 2);
+            for (i, item) in shown.iter().enumerate() {
+                let on = i == popup.chosen;
+                ui::horizontal(#{ height: 22 }, || {
+                    if ui::pill(item.label, #{
+                        role: if on { "row_on" } else { "row" }, font: "mono", size: 11.5,
+                        min_width: 180, color: if on { k.on_accent } else { k.text },
+                    }) {
+                        accept(S, item);
+                    }
+                    let detail = if item.detail is String { item.detail } else { item.kind };
+                    ui::label(detail, style::mono_sm(k.faint));
+                });
+            }
+        });
+    });
+}
+
+fn hover(S, k, rel) {
+    let id = editor_id(S, rel);
+    let now = engine::time();
+    let pointer = ui::code_pointer(id);
+    let over_card = inside(S, S.eurefile.hover_rect);
+    if pointer is Object {
+        let key = format!("{}:{}", pointer.line, pointer.column);
+        if key != S.eurefile.hover_key {
+            S.eurefile.hover_key = key;
+            S.eurefile.hover_since = now;
+            S.eurefile.hover = ();
+            S.eurefile.hover_rect = ();
+        } else if !(S.eurefile.hover is Object) && now - S.eurefile.hover_since > HOVER_DELAY {
+            let answer = eure::hover(abs(S, rel), pointer.line, pointer.column);
+            S.eurefile.hover = if answer is Object {
+                #{ text: answer.text, x: pointer.x, y: pointer.y + pointer.height + 6.0 }
+            } else {
+                #{ text: "", x: 0.0, y: 0.0 }
+            };
+        }
+    } else if !over_card {
+        S.eurefile.hover_key = "";
+        S.eurefile.hover = ();
+        S.eurefile.hover_rect = ();
+    }
+    let card = S.eurefile.hover;
+    if !(card is Object) || card.text == "" {
+        return;
+    }
+    let lines = card_lines(card.text);
+    let h = 16.0 + 17.0 * util::f(lines.len());
+    S.eurefile.hover_rect = #{ x: card.x, y: card.y, w: 420.0, h: h };
+    ui::overlay("eure-hover", #{
+        x: card.x, y: card.y, w: 420, h: h,
+        fill: k.panel, stroke: k.line, radius: 8, padding_x: 10, padding_y: 8,
+    }, || {
+        ui::vertical(|| {
+            ui::spacing(0, 3);
+            for line in lines {
+                if line == "---" {
+                    ui::separator();
+                } else {
+                    ui::label(line, style::mono_sm(k.text));
+                }
+            }
+        });
+    });
+}
+
+// Whether the pointer is inside `r`, a `#{ x, y, w, h }` in design pixels.
+fn inside(S, r) {
+    if !(r is Object) {
+        return false;
+    }
+    let (px, py) = inputview::pointer(S);
+    px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h
+}
+
+// The server answers in markdown; the card shows it as text.
+fn card_lines(text) {
+    let out = [];
+    for line in text.split('\n') {
+        let plain = line.replace("**", "").replace("`", "").trim();
+        if plain == "" && (out.len() == 0 || out[out.len() - 1] == "") {
+            continue;
+        }
+        out.push(plain);
+    }
+    if out.len() > 14 {
+        out.truncate(14);
+        out.push("…");
+    }
+    out
+}
+
+fn definition(S, rel, id) {
+    if !ui::shortcut("none", "F12") {
+        return;
+    }
+    let caret = ui::code_caret(id);
+    if !(caret is Object) {
+        return;
+    }
+    let targets = util::vec(eure::definition(abs(S, rel), caret.line, caret.column));
+    if targets.len() == 0 {
+        log::info("no definition here");
+        return;
+    }
+    let target = targets[0];
+    let file = shell::script_rel(S, target.file);
+    if file.ends_with(".eure") && !file.starts_with("/") && !file.contains(":") {
+        open_at(S, file, target.from.line);
+        S.eurefile.jump.column = target.from.column;
+    } else {
+        log::info(format!("defined in {}:{}", target.file, target.from.line));
+    }
+}
+
+/// A row for every Eure file, for the Script persona's left panel.
+pub fn rows(S) {
+    let rows = [];
+    for rel in files(S) {
+        let n = util::count_lines(model::source(S, rel).unwrap_or(""));
+        rows.push(#{ icon: "{}", name: rel, meta: format!("{} L", n), run: || { open(S, rel); } });
+    }
+    rows
+}
+
+// The line and column of the first node's `id` or `name` key.
+fn first_key(text) {
+    for (i, line) in text.split('\n').enumerate() {
+        let indent = 0;
+        for c in line.chars() {
+            if c != ' ' {
+                break;
+            }
+            indent += 1;
+        }
+        let rest = line[indent..];
+        if rest.starts_with("id:") || rest.starts_with("name:") {
+            return (i + 1, indent + 1);
+        }
+    }
+    (1, 1)
+}
+
+/// `euredemo`: the examples' Eure files pass the generated schema, and the
+/// server answers about them.
+pub fn selftest(S) {
+    let checked = 0;
+    for f in findings(S) {
+        log::error(format!("selftest FAILED: eure {}:{} {}", f.file, f.line, f.message));
+    }
+    for rel in files(S) {
+        if !rel.starts_with("scenes/") {
+            continue;
+        }
+        let runs = tokens(S, rel, text_of(S, rel).unwrap_or(""));
+        if runs.len() == 0 {
+            log::error("selftest FAILED: no tokens for " + rel);
+        }
+        let items = util::vec(eure::completion(abs(S, rel), 1, 1));
+        if items.len() == 0 {
+            log::error("selftest FAILED: no completion at the top of " + rel);
+        }
+        let (line, column) = first_key(text_of(S, rel).unwrap_or(""));
+        let card = eure::hover(abs(S, rel), line, column);
+        if !(card is Object) || card.text == "" {
+            log::error("selftest FAILED: no hover on the first key of " + rel);
+        }
+        let targets = util::vec(eure::definition(abs(S, rel), line, column));
+        if targets.len() == 0 || !targets[0].file.ends_with("scene.schema.eure") {
+            log::error("selftest FAILED: the first key of " + rel + " is not defined in the generated schema");
+        }
+        checked += 1;
+        open(S, rel);
+    }
+    if checked == 0 {
+        log::error("selftest FAILED: no Eure scene to check");
+    } else {
+        log::info(format!("selftest ok: eure checked {} scene files", checked));
+    }
+    dock::show(S, "problems");
+}

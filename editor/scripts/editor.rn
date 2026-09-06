@@ -7,6 +7,7 @@ mod chrome;
 mod defs;
 mod dock;
 mod docks;
+mod eurefile;
 mod gizmo;
 mod gizmo2d;
 mod highlight;
@@ -40,6 +41,8 @@ pub fn init(this) {
         // A shader opened from a material; empty means the code pane shows
         // the selected node's script instead.
         shader_rel: "",
+        // An Eure file opened in the code pane; empty means none.
+        eure_rel: "",
         // The shader line the viewport draws the value of; 0 draws the scene.
         preview_line: 0,
         preview_rel: "",
@@ -102,6 +105,7 @@ pub fn init(this) {
         showcase: showcase::state(),
         inputview: inputview::state(),
         lint: lint::state(),
+        eurefile: eurefile::state(),
         assets: dock::assets_state(),
         // Where an editor plugin keeps its own state, by id.
         plugins: #{},
@@ -313,6 +317,7 @@ pub fn draw_ui(this) {
     showcase::draw(S);
     // Stage: decide what is showing, size every sheet once, then draw them.
     // Nothing below computes a rect of its own.
+    eurefile::shortcuts(S);
     center::modes(S);
     S.layout.dock_h = if docks::bottom_tall(S) { 212.0 } else { 150.0 };
     layout::compute(S);

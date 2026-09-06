@@ -146,6 +146,9 @@ pub fn run(S) {
     for f in scene_findings(S) {
         found.push(f);
     }
+    for f in crate::eurefile::findings(S) {
+        found.push(f);
+    }
     S.lint.found = found;
     S.lint.at = engine::time();
 }
@@ -156,6 +159,7 @@ fn fingerprint(S) {
     for rel in roots(S) {
         parts.push(format!("{}:{}", rel, source_of(S, rel).unwrap_or("").len()));
     }
+    parts.push(crate::eurefile::fingerprint(S));
     util::join(parts, "|")
 }
 
@@ -189,6 +193,23 @@ pub fn lines(S, rel, severity) {
         }
     }
     out
+}
+
+/// `(errors, warnings)` in one file.
+pub fn counts_in(S, rel) {
+    let errors = 0;
+    let warnings = 0;
+    for f in S.lint.found {
+        if f.file != rel {
+            continue;
+        }
+        if f.severity == "error" {
+            errors += 1;
+        } else {
+            warnings += 1;
+        }
+    }
+    (errors, warnings)
 }
 
 /// `(errors, warnings)` over the whole project.

@@ -157,6 +157,9 @@ for ex in examples/*/; do
   printf 'ok\n'
   printf '  assets ... '
   edit_step "$name: assets" "$ex" assetdemo
+  # The Eure files pass the schema generated from the component registry,
+  # and the language server colours and completes them.
+  edit_step "$name: eure" "$ex" euredemo
   printf 'ok\n'
 
   # Picking, aimed by hand: the ray a real click uses comes from the window,

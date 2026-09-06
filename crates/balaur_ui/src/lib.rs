@@ -19,6 +19,7 @@
 //! table), so entire themes live in scripts and hot reload with them.
 
 mod bridge;
+mod code;
 mod theme;
 mod widget_bindings;
 mod widget_layer;
@@ -30,6 +31,7 @@ use anyhow::Result;
 use balaur_core::{App, Engine, Plugin};
 use std::collections::{HashMap, HashSet};
 
+pub use code::CodePosition;
 pub use theme::ThemeTokens;
 pub use widget_layer::{Move, UiFocus, Widget, WidgetLayerConfig};
 pub use widget_theme::WidgetTheme;
@@ -74,6 +76,12 @@ pub struct UiState {
     pub text_seeds: HashMap<String, String>,
     pub focused_once: HashSet<String>,
     pub textures: HashMap<String, egui::TextureHandle>,
+    /// Where each focused code editor's caret was on its last draw.
+    pub code_carets: HashMap<String, CodePosition>,
+    /// The text position under the pointer, per code editor it hovers.
+    pub code_pointers: HashMap<String, CodePosition>,
+    /// Editors whose next draw scrolls the caret into view, after `code_edit`.
+    pub code_reveal: HashSet<String>,
 }
 
 pub struct UiPlugin;

@@ -163,67 +163,72 @@ draw = { type = "string", default = "", description = "What fills a `draw` widge
             get: Box::new(|eng, entity| {
                 let world = eng.world();
                 let widget = world.get::<&Widget>(entity).ok()?;
-                let mut map = toml::map::Map::new();
-                map.insert("kind".into(), toml::Value::String(widget.kind.clone()));
-                map.insert("text".into(), toml::Value::String(widget.text.clone()));
-                map.insert("visible".into(), toml::Value::Boolean(widget.visible));
-                map.insert("anchor".into(), toml::Value::String(widget.anchor.clone()));
-                map.insert("x".into(), toml::Value::Float(f64::from(widget.x)));
-                map.insert("y".into(), toml::Value::Float(f64::from(widget.y)));
-                map.insert("width".into(), toml::Value::Float(f64::from(widget.width)));
-                map.insert("height".into(), toml::Value::Float(f64::from(widget.height)));
-                map.insert(
-                    "font_size".into(),
-                    toml::Value::Float(f64::from(widget.font_size)),
-                );
-                map.insert(
-                    "text_color".into(),
-                    toml::Value::Array(
-                        widget
-                            .text_color
-                            .iter()
-                            .map(|c| toml::Value::Float(f64::from(*c)))
-                            .collect(),
-                    ),
-                );
-                map.insert("clicked".into(), toml::Value::Boolean(widget.clicked));
-                map.insert(
-                    "on_click".into(),
-                    toml::Value::String(widget.on_click.clone()),
-                );
-                map.insert(
-                    "padding".into(),
-                    toml::Value::Float(f64::from(widget.padding)),
-                );
-                map.insert("gap".into(), toml::Value::Float(f64::from(widget.gap)));
-                map.insert("align".into(), toml::Value::String(widget.align.clone()));
-                map.insert(
-                    "focusable".into(),
-                    toml::Value::Boolean(widget.focusable),
-                );
-                map.insert(
-                    "on_focus".into(),
-                    toml::Value::String(widget.on_focus.clone()),
-                );
-                map.insert("theme".into(), toml::Value::String(widget.theme.clone()));
-                map.insert(
-                    "text_key".into(),
-                    toml::Value::String(widget.text_key.clone()),
-                );
-                map.insert("grow".into(), toml::Value::Float(f64::from(widget.grow)));
-                map.insert(
-                    "min_width".into(),
-                    toml::Value::Float(f64::from(widget.min_width)),
-                );
-                map.insert(
-                    "min_height".into(),
-                    toml::Value::Float(f64::from(widget.min_height)),
-                );
-                map.insert("draw".into(), toml::Value::String(widget.draw.clone()));
-                Some(toml::Value::Table(map))
+                Some(widget_table(&widget))
             }),
         },
     );
+}
+
+/// The component as a scene file spells it, every property present.
+fn widget_table(widget: &Widget) -> toml::Value {
+    let mut map = toml::map::Map::new();
+    map.insert("kind".into(), toml::Value::String(widget.kind.clone()));
+    map.insert("text".into(), toml::Value::String(widget.text.clone()));
+    map.insert("visible".into(), toml::Value::Boolean(widget.visible));
+    map.insert("anchor".into(), toml::Value::String(widget.anchor.clone()));
+    map.insert("x".into(), toml::Value::Float(f64::from(widget.x)));
+    map.insert("y".into(), toml::Value::Float(f64::from(widget.y)));
+    map.insert("width".into(), toml::Value::Float(f64::from(widget.width)));
+    map.insert(
+        "height".into(),
+        toml::Value::Float(f64::from(widget.height)),
+    );
+    map.insert(
+        "font_size".into(),
+        toml::Value::Float(f64::from(widget.font_size)),
+    );
+    map.insert(
+        "text_color".into(),
+        toml::Value::Array(
+            widget
+                .text_color
+                .iter()
+                .map(|c| toml::Value::Float(f64::from(*c)))
+                .collect(),
+        ),
+    );
+    map.insert("clicked".into(), toml::Value::Boolean(widget.clicked));
+    map.insert(
+        "on_click".into(),
+        toml::Value::String(widget.on_click.clone()),
+    );
+    map.insert(
+        "padding".into(),
+        toml::Value::Float(f64::from(widget.padding)),
+    );
+    map.insert("gap".into(), toml::Value::Float(f64::from(widget.gap)));
+    map.insert("align".into(), toml::Value::String(widget.align.clone()));
+    map.insert("focusable".into(), toml::Value::Boolean(widget.focusable));
+    map.insert(
+        "on_focus".into(),
+        toml::Value::String(widget.on_focus.clone()),
+    );
+    map.insert("theme".into(), toml::Value::String(widget.theme.clone()));
+    map.insert(
+        "text_key".into(),
+        toml::Value::String(widget.text_key.clone()),
+    );
+    map.insert("grow".into(), toml::Value::Float(f64::from(widget.grow)));
+    map.insert(
+        "min_width".into(),
+        toml::Value::Float(f64::from(widget.min_width)),
+    );
+    map.insert(
+        "min_height".into(),
+        toml::Value::Float(f64::from(widget.min_height)),
+    );
+    map.insert("draw".into(), toml::Value::String(widget.draw.clone()));
+    toml::Value::Table(map)
 }
 
 /// A `Widget` built from a full property table (defaults already merged).
@@ -673,8 +678,8 @@ fn draw_themed(ui: &mut egui::Ui, at: &mut Painting<'_>, index: usize) {
                 .inner_margin(margin)
                 .show(ui, |ui| {
                     // `width`/`height` size the frame, margins included.
-                    let min = (box_of(widget, at.assigned, scale) - margin.sum())
-                        .max(egui::Vec2::ZERO);
+                    let min =
+                        (box_of(widget, at.assigned, scale) - margin.sum()).max(egui::Vec2::ZERO);
                     hold_to(ui, min);
                     if !caption.is_empty() {
                         ui.label(egui::RichText::new(&caption).font(font).color(color));
@@ -698,7 +703,12 @@ fn draw_themed(ui: &mut egui::Ui, at: &mut Painting<'_>, index: usize) {
             let target = widget.draw.clone();
             let mut inner = ui.new_child(egui::UiBuilder::new().max_rect(rect));
             inner.set_clip_rect(rect.intersect(ui.clip_rect()));
-            crate::bridge::scoped_named(at.eng, &mut inner, balaur_core::node_id_of(entity), &target);
+            crate::bridge::scoped_named(
+                at.eng,
+                &mut inner,
+                balaur_core::node_id_of(entity),
+                &target,
+            );
             ui.advance_cursor_after_rect(rect);
         }
         _ => {
@@ -851,12 +861,18 @@ fn lay_out(ui: &mut egui::Ui, at: &mut Painting<'_>, index: usize, axis: Axis) {
         let hug = size <= 0.0;
         let extent = if hug { (far - head).max(0.0) } else { size };
         let fills = cross == egui::Align::Min && across(room) > 0.0;
-        let breadth = if fills { across(room) } else { across(outer.size()) };
+        let breadth = if fills {
+            across(room)
+        } else {
+            across(outer.size())
+        };
         let rect = match axis {
             Axis::Row => egui::Rect::from_min_size(pos2(head, outer.min.y), vec2(extent, breadth)),
-            Axis::Column => egui::Rect::from_min_size(pos2(outer.min.x, head), vec2(breadth, extent)),
+            Axis::Column => {
+                egui::Rect::from_min_size(pos2(outer.min.x, head), vec2(breadth, extent))
+            }
         };
-        let held = at.assigned;
+        let previous = at.assigned;
         at.assigned = match (hug, fills) {
             (true, true) => match axis {
                 Axis::Row => vec2(0.0, breadth),
@@ -872,7 +888,7 @@ fn lay_out(ui: &mut egui::Ui, at: &mut Painting<'_>, index: usize, axis: Axis) {
         let mut child_ui = ui.new_child(egui::UiBuilder::new().max_rect(rect).layout(layout));
         draw_one(&mut child_ui, at, *child);
         let used = child_ui.min_rect().size();
-        at.assigned = held;
+        at.assigned = previous;
         record_measure(entity, used);
         let taken = if hug { along(used) } else { extent };
         ui.allocate_rect(

@@ -176,6 +176,9 @@ fn asset_look(name, is_dir) {
     if name.ends_with(".toml") {
         return (crate::icons::panel("scene"), "accent");
     }
+    if name.ends_with(".eure") {
+        return (crate::icons::panel("scene"), "sage");
+    }
     if name.ends_with(".png") || name.ends_with(".jpg") {
         return (crate::icons::persona("ui"), "accent");
     }
@@ -185,6 +188,10 @@ fn asset_look(name, is_dir) {
 // Opening a file means the thing the editor can actually do with it: jump to
 // the node running a script, or open a scene. Anything else just selects.
 fn open_asset(S, rel) {
+    if rel.ends_with(".eure") {
+        crate::eurefile::open(S, rel);
+        return;
+    }
     if rel.ends_with(".toml") && rel.starts_with("scenes/") {
         if S.scene_rel != rel {
             model::open_scene(S, rel);
@@ -700,6 +707,10 @@ pub fn problems(S, k) {
 // Select the node whose script this is and show it, so a click lands on the
 // code rather than on a file name.
 fn open_at(S, f) {
+    if f.file.ends_with(".eure") {
+        crate::eurefile::open_at(S, f.file, util::max(1, f.line));
+        return;
+    }
     for (i, node) in S.doc.iter().enumerate() {
         if model::script_rel(node) == Some(f.file) {
             shell::choose(S, i);

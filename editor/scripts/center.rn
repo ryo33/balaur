@@ -6,6 +6,7 @@ pub const BAR_H = 36.0;
 // 3D viewport overlays or the script editor.
 
 use crate::defs;
+use crate::eurefile;
 use crate::highlight;
 use crate::icons;
 use crate::history;
@@ -80,12 +81,17 @@ fn doc_tabs(S, k) {
         ui::horizontal(#{ height: BAR_H }, || {
             ui::spacing(6, 0);
             let scene_name = util::last_segment(S.scene_rel);
-            let script_label = match model::script_rel(node) {
-                Some(script) => {
-                    let dirty = S.script_dirty.contains_key(S.game_root + "/" + script);
-                    util::last_segment(script) + (if dirty { " ●" } else { "" })
+            let script_label = if S.eure_rel != "" {
+                let dirty = S.script_dirty.contains_key(S.game_root + "/" + S.eure_rel);
+                util::last_segment(S.eure_rel) + (if dirty { " ●" } else { "" })
+            } else {
+                match model::script_rel(node) {
+                    Some(script) => {
+                        let dirty = S.script_dirty.contains_key(S.game_root + "/" + script);
+                        util::last_segment(script) + (if dirty { " ●" } else { "" })
+                    }
+                    None => "no script",
                 }
-                None => "no script",
             };
             let tabs = [
                 #{ id: "scene", icon: icons::panel("scene"), label: scene_name + (if history::dirty(S) { " ●" } else { "" }) },
@@ -112,7 +118,9 @@ fn doc_tabs(S, k) {
             }
             if !S.compact {
                 ui::right(|| {
-                    let hint = if S.doctab == "script" && node.contains_key("script") {
+                    let hint = if S.doctab == "script" && S.eure_rel != "" {
+                        "Eure · " + S.eure_rel
+                    } else if S.doctab == "script" && node.contains_key("script") {
                         "Rune · " + model::script_rel(node).unwrap_or("")
                     } else {
                         let (nodes, _) = model::stats(S);
@@ -246,6 +254,10 @@ fn document_sheet(S, k, id) {
 
 // The file's engine-facing surface, beside the code rather than inside it.
 fn hooks_sheet(S, k) {
+    if S.eure_rel != "" {
+        eure_sheet(S, k);
+        return;
+    }
     let shading = S.shader_rel != "";
     let rel = if shading { S.shader_rel } else { model::script_rel(model::selected_node(S)).unwrap_or("") };
     style::sheet(k, "hooks", S.layout.hooks, 12, 0, || {
@@ -272,6 +284,29 @@ fn hooks_sheet(S, k) {
     });
 }
 
+// Beside an Eure file: what it is, and the way back to the node's script.
+fn eure_sheet(S, k) {
+    style::sheet(k, "hooks", S.layout.hooks, 12, 0, || {
+        ui::add_space(11);
+        ui::label("EURE FILE", style::heading(k));
+        ui::add_space(9);
+        ui::label(S.eure_rel, style::mono_sm(k.text));
+        ui::add_space(6);
+        let (errors, warnings) = lint::counts_in(S, S.eure_rel);
+        ui::label(format!("{} problems · {} warnings", errors, warnings), style::mono_sm(k.faint));
+        ui::add_space(6);
+        ui::label("F12 definition · ⌃Space complete", style::mono_sm(k.faint));
+        if S.script_dirty.contains_key(S.game_root + "/" + S.eure_rel) {
+            ui::add_space(8);
+            ui::label("● unsaved · ⌘S", util::merge(style::mono(k.accent), #{ size: 10 }));
+        }
+        ui::add_space(10);
+        if ui::pill("Back to script", #{ role: "chip_quiet" }) {
+            eurefile::close(S);
+        }
+    });
+}
+
 fn script_editor(S, k) {
     document_sheet(S, k, "code");
 }
@@ -283,6 +318,10 @@ fn split_code(S, k) {
 
 // `hooks` is off in a split, where 172 px of a narrowed pane is the code's.
 fn code_pane(S, k) {
+    if S.eure_rel != "" {
+        eurefile::pane(S, k);
+        return;
+    }
     let node = model::selected_node(S);
     // A shader opened from a material takes the pane; otherwise the
     // selected node's script does.

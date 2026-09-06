@@ -10,6 +10,7 @@
 
 pub use balaur_anim::AnimationPlugin;
 pub use balaur_core::*;
+pub use balaur_eure::EurePlugin;
 pub use balaur_input::InputPlugin;
 pub use balaur_physics::PhysicsPlugin;
 pub use balaur_platform::PlatformPlugin;
@@ -17,6 +18,7 @@ pub use balaur_render::RenderPlugin;
 pub use balaur_ui::UiPlugin;
 
 pub use balaur_anim as animation;
+pub use balaur_eure as eure;
 pub use balaur_input as input;
 pub use balaur_physics as physics;
 pub use balaur_platform as platform;
@@ -219,6 +221,7 @@ fn standard_plugins() -> Vec<Box<dyn balaur_plugin::Plugin>> {
         Box::new(Builtin::new(PhysicsPlugin)),
         Box::new(Builtin::new(RenderPlugin)),
         Box::new(Builtin::new(UiPlugin)),
+        Box::new(Builtin::new(EurePlugin)),
         Box::new(PlatformPlugin::default()),
     ];
     all.extend(optional_modules());

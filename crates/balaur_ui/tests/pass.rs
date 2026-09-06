@@ -311,3 +311,54 @@ fn shortcuts_report_no_press_without_input() {
         "#,
     );
 }
+
+#[test]
+fn code_edit_replaces_a_range_and_reports_the_new_buffer() {
+    let (app, errors) = draw(
+        r#"
+        this.edited = this.get("edited").unwrap_or(0);
+        ui::central_panel(#{}, || {
+            let (text, _, _) = ui::code_editor("ed", "let x = 1;\nx");
+            assert!(text == "let x = 1;\nx", "the editor lost its buffer");
+            // Unfocused, so no caret; the pointer is nowhere near it either.
+            assert!(ui::code_caret("ed") is Tuple, "a caret with no focus");
+            assert!(ui::code_pointer("ed") is Tuple, "a pointer with no mouse");
+            let after = ui::code_edit("ed", 1, 5, 1, 6, "why");
+            if after == "let why = 1;\nx" { this.edited = 1; }
+        });
+        "#,
+    );
+    assert!(errors.is_empty(), "{errors:#?}");
+    assert_eq!(
+        field(&app, "edited"),
+        Some(1.0),
+        "code_edit did not replace the range"
+    );
+}
+
+#[test]
+fn the_code_editor_takes_language_server_tokens_for_its_colours() {
+    let (app, errors) = draw(
+        r#"
+        this.drawn = this.get("drawn").unwrap_or(0);
+        ui::central_panel(#{}, || {
+            let (text, changed, _) = ui::code_editor("eure", "name: hello\n", #{
+                language: "eure",
+                tokens: [
+                    #{ line: 1, column: 1, length: 4, kind: "property", modifiers: [] },
+                    #{ line: 1, column: 7, length: 5, kind: "string", modifiers: [] },
+                    #{ line: 9, column: 1, length: 4, kind: "keyword", modifiers: ["header"] },
+                ],
+                problems: [1],
+            });
+            if text == "name: hello\n" && !changed { this.drawn = 1; }
+        });
+        "#,
+    );
+    assert!(errors.is_empty(), "{errors:#?}");
+    assert_eq!(
+        field(&app, "drawn"),
+        Some(1.0),
+        "the token-coloured editor did not draw"
+    );
+}

@@ -1,0 +1,35 @@
+// What `project.eure` says about a game. Plugins add tables of their own
+// (`physics`, `audio`, `save`, `apple`, ...), so unknown keys are allowed.
+$unknown-fields = "allow"
+
+name = `text`
+name.$description: The project's name, and the name of its user data directory.
+
+main_scene = `text`
+main_scene.$description: The scene a run starts in, project-relative.
+
+language = `text`
+language.$optional = true
+language.$description: The scripting language; absent means Rune.
+
+assets = `text`
+assets.$optional = true
+assets.$description: Where a shipped game reads assets from; a dev run always reads the source tree.
+
+@ input
+$optional = true
+
+@ input.actions
+$variant: map
+key = `text`
+value = [`text`]
+$description: Actions a script asks for by name, each bound to keys, buttons, axes or key pairs.
+
+@ locale
+$optional = true
+default = `text`
+default.$optional = true
+default.$description: The language a run starts in.
+fallback = `text`
+fallback.$optional = true
+fallback.$description: Where a key the current language lacks is looked for next.

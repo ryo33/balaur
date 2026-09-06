@@ -53,6 +53,7 @@ balaur_gamend = { workspace = true, optional = true }
 balaur_platform.workspace = true
 balaur_apple = { workspace = true, optional = true }
 balaur_ui.workspace = true
+balaur_eure.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
 toml.workspace = true

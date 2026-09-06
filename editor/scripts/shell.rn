@@ -251,6 +251,17 @@ pub fn toggle_shader_preview(S, rel, line) {
 // cmd+S saves the visible script buffer when the code editor is open, the
 // scene document otherwise.
 pub fn save_active(S) {
+    // An Eure file is data: written, and re-read by whoever reads it next.
+    if S.eure_rel != "" && S.doctab == "script" {
+        let abs = S.game_root + "/" + S.eure_rel;
+        if let Some(buffer) = S.script_buffers.get(abs) {
+            fs::write(abs, buffer);
+            model::forget(S, Some(S.eure_rel));
+            S.script_dirty.remove(abs);
+            log::info("saved " + S.eure_rel);
+        }
+        return;
+    }
     // A shader is not a script: it is written and the watcher relinks the
     // materials naming it, with no unit to rebuild.
     if S.shader_rel != "" && S.doctab == "script" {
@@ -338,6 +349,7 @@ fn states() {
         "lintdemo": crate::selftest::linting,
         "sessiondemo": crate::selftest::sessions,
         "themedemo": crate::selftest::theme_switch,
+        "euredemo": crate::eurefile::selftest,
     }
 }
 
