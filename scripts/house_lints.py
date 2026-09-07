@@ -57,6 +57,7 @@ KNOWN_RESOURCES = {
     "AnimationState", "AppIconConfig", "AssetState", "AssetTypeRegistry",
     "AudioState", "CameraConfig", "CameraConfig2d", "CameraInputConfig",
     "ClearColorConfig", "ComponentRegistry", "DebugLineBuffer", "DebugLineBuffer2d",
+    "EureState",
     "GamendSnapshot", "GamendState",
     "GridConfig", "HttpSnapshot", "HttpState", "InputSnapshot", "PhysicsState", "WebsocketSnapshot", "WebsocketState",
     "PhysicsState2d", "PostConfig", "ProjectRoot",

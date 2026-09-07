@@ -1657,6 +1657,41 @@ Note: the workspace patches `kiss3d` to the local checkout at
 (committed there as `fix: report the macOS Command (Super) key in egui
 modifiers`); drop the `[patch.crates-io]` entry once that ships upstream.
 
+### Eure files: the language is a plugin
+
+`.eure` files open in the code pane from the Script persona's left panel, the
+Assets dock or a Problems row, and every language feature there comes from
+the `eure` crate's own queries — the ones its language server and CLI are
+built on — running inside the engine as the `eure` module
+(`crates/balaur_eure`). A query *suspends* when it needs a file or a glob it
+has not seen, so the plugin runs the query runtime on the frame thread and
+serves each suspension from the disk in the same call:
+`eure.hover(path, line, column)` returns before the script's next line. No
+second process, no protocol, and no LSP layer to translate back out of. A
+script `open`s a file's text (again on every change) and asks `tokens`,
+`diagnostics`, `hover`, `completion` or `definition` about it; positions are
+`{ line, column }` from one, in characters, the spelling the gutter uses.
+
+The editor half is `editor/scripts/eurefile.rn`. `ui.code_editor` takes the
+language's tokens through `tokens:` and colours by them instead of tokenizing;
+`ui.code_caret` and `ui.code_pointer` say where the caret and the mouse are
+in text and on screen, which is where the completion popup and the hover
+card go; `ui.code_edit` accepts a completion into the buffer. Problems join
+`lint`'s sweep as findings, so an Eure file's errors sit in the same dock
+and the same gutter as a script's.
+
+What a file is checked against is decided per workspace by `Eure.eure`. A
+game that has one keeps it. One that does not gets a config the editor
+synthesises, binding `scenes/**/*.eure` to a scene schema **generated from the
+component registry** at start-up — every registered component becomes an
+optional field of a node, an enum becomes a union of literals, a `shorthand`
+property makes the component a union of its scalar and its record — and
+`project.eure` to `editor/schemas/project.schema.eure`. Generating rather
+than writing the scene schema is what keeps a third-party plugin's components
+completing and validating with zero editor changes, the same promise the
+inspector makes. `--state euredemo` asserts that every example's Eure files
+pass, and `scripts/e2e.sh` runs it.
+
 ## Input
 
 `balaur_input` owns a backend-agnostic `InputSnapshot` (keys by name, mouse,

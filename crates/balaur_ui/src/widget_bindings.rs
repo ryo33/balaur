@@ -9,11 +9,10 @@ use balaur_script::{Bindings, BindingsExt, CallbackId, Value};
 use egui::{pos2, vec2, Align2, Color32, FontId, Rect, Sense, Stroke, StrokeKind};
 
 use crate::bridge::{scale, scoped, with_ctx, with_ui};
+use crate::code::{code_edit, code_editor};
 use crate::theme::{self, parse_hex};
-use crate::widgets::{
-    code_editor, draw_image, panel_frame, pill_radius, sc, text, text_field, Opts,
-};
-use crate::{UiConfig, UiState};
+use crate::widgets::{draw_image, panel_frame, pill_radius, sc, text, text_field, Opts};
+use crate::{CodePosition, UiConfig, UiState};
 
 /// `ui.*` bindings: theme.
 pub(crate) fn install_theme(m: &mut dyn Bindings<Engine>) {
@@ -573,22 +572,62 @@ pub(crate) fn install_scale(m: &mut dyn Bindings<Engine>) {
     });
 }
 
-/// `ui.*` bindings: code editor.
+/// `ui.*` bindings: code editor, and the caret inside it.
 pub(crate) fn install_code_editor(m: &mut dyn Bindings<Engine>) {
-    m.describe(&[(
+    m.describe(&[
+        ("code_editor", &[], "", "Draw an editable, highlighted buffer with a gutter; returns the text, whether it changed, and any line clicked. `tokens` colours it from a language server instead of the tokenizer."),
+        ("code_caret", &[], "", "Where editor `id`'s caret is while it has focus: `{ line, column, x, y, height }`, the spot in design pixels; nil otherwise."),
+        ("code_pointer", &[], "", "The text position under the pointer while it is over editor `id`: `{ line, column, x, y, height }`; nil otherwise."),
+        ("code_edit", &[], "", "Replace `from_line:from_column..to_line:to_column` in editor `id` with `text`, focus it and put the caret after the text; returns the new buffer."),
+    ]);
+    m.function(
         "code_editor",
-        &[],
-        "", "Draw an editable, highlighted buffer with a gutter; returns the text, whether it changed, and any line clicked.",
-    )]);
-    {
-        m.function(
-            "code_editor",
-            |eng: &Engine, (id, source, opts): (String, String, Option<Value>)| {
-                let opts = Opts::with_roles(opts);
-                code_editor(eng, &id, &source, &opts)
-            },
-        );
-    }
+        |eng: &Engine, (id, source, opts): (String, String, Option<Value>)| {
+            let opts = Opts::with_roles(opts);
+            code_editor(eng, &id, &source, &opts)
+        },
+    );
+    m.function("code_caret", |eng: &Engine, id: String| {
+        let state = eng.resource::<UiState>();
+        let found = state.borrow().code_carets.get(&id).map(code_position);
+        Ok(found)
+    });
+    m.function("code_pointer", |eng: &Engine, id: String| {
+        let state = eng.resource::<UiState>();
+        let found = state.borrow().code_pointers.get(&id).map(code_position);
+        Ok(found)
+    });
+    m.function(
+        "code_edit",
+        |eng: &Engine,
+         (id, from_line, from_column, to_line, to_column, text): (
+            String,
+            usize,
+            usize,
+            usize,
+            usize,
+            String,
+        )| {
+            code_edit(
+                eng,
+                &id,
+                (from_line, from_column),
+                (to_line, to_column),
+                &text,
+            )
+        },
+    );
+}
+
+fn code_position(at: &CodePosition) -> Value {
+    let int = |n: usize| Value::Int(i64::try_from(n).unwrap_or(i64::MAX));
+    Value::Map(vec![
+        ("line".to_string(), int(at.line)),
+        ("column".to_string(), int(at.column)),
+        ("x".to_string(), Value::Num(f64::from(at.x))),
+        ("y".to_string(), Value::Num(f64::from(at.y))),
+        ("height".to_string(), Value::Num(f64::from(at.height))),
+    ])
 }
 
 /// `ui.*` bindings: drop-down select.

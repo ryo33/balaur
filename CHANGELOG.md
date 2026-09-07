@@ -15,6 +15,8 @@ Unreleased; a release is a `v*` tag whose notes become that version's section.
 - `script.attempt`, `mod` files from disk and packs, `balaur api`.
 - `ScriptHost::call_in(path, function, args)` for project-level hooks.
 - The script API documents itself: every module, function, component and asset type.
+- `eure.*`: the Eure language in-process — tokens, diagnostics, hover, completion and definitions for a file a script opens; `fs.absolute`.
+- `ui.code_editor` takes `tokens`; `ui.code_caret`, `ui.code_pointer` and `ui.code_edit` read and move the caret.
 
 ### Scenes and assets
 
@@ -128,6 +130,8 @@ Unreleased; a release is a `v*` tag whose notes become that version's section.
 - The status strip moved into the bottom dock's foot; sheets separate by tone rather than an outline.
 - Viewport chips recede until the pointer comes for them.
 - Asset cards carry their own name and a typed mark; the timeline has a ruler, a playhead and keys that can be clicked.
+- Eure files open in the code pane: language-server colouring, problems in the gutter and the Problems dock, hover cards, completion (as you type and ⌃Space) and F12 to a definition.
+- The scene schema Eure files are checked against is generated from the component registry; `editor/schemas/project.schema.eure` covers `project.eure`.
 - `ui::cursor_y` reports where the next widget lands, so a rule can be drawn through rows not yet laid out.
 - The persona bar centres on the document column; the inspector reaches the bottom gutter; `ui::toggle` takes its size from the theme.
 - Vector fields are inputs, not pills; node marks come from the icon set and lost their disc.

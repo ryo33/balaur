@@ -197,7 +197,8 @@ fn doppler(listener: &ListenerPose, emitter: &Emitter, to_emitter: Vec3, distanc
     }
     let to_listener = -to_emitter / distance;
     let ceiling = SPEED_OF_SOUND * 0.9;
-    let along = |velocity: Vec3| (velocity.dot(to_listener) * emitter.doppler).clamp(-ceiling, ceiling);
+    let along =
+        |velocity: Vec3| (velocity.dot(to_listener) * emitter.doppler).clamp(-ceiling, ceiling);
     let heard = SPEED_OF_SOUND - along(listener.velocity);
     let sounded = SPEED_OF_SOUND - along(emitter.velocity);
     (heard / sounded).clamp(1.0 / MAX_DOPPLER, MAX_DOPPLER)
@@ -212,7 +213,10 @@ fn doppler(listener: &ListenerPose, emitter: &Emitter, to_emitter: Vec3, distanc
 #[must_use]
 pub fn stereo_gains(pan: f32) -> [f32; 2] {
     let pan = pan.clamp(-1.0, 1.0);
-    [((1.0 - pan) * 0.5).sqrt(), ((1.0 + pan) * 0.5).sqrt()]
+    [
+        f32::midpoint(1.0, -pan).sqrt(),
+        f32::midpoint(1.0, pan).sqrt(),
+    ]
 }
 
 /// Follow the listener node, then re-place every positional sound.

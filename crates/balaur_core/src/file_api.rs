@@ -38,6 +38,14 @@ pub(crate) fn fs_write(eng: &Engine, args: &[Value]) -> Result<Value> {
     Ok(Value::Nil)
 }
 
+/// The disk path behind a project-relative one, for handing to something
+/// that does not know the project root.
+pub(crate) fn fs_absolute(eng: &Engine, args: &[Value]) -> Result<Value> {
+    let path = resolve(eng, text(args, 0)?);
+    let path = std::path::absolute(&path).unwrap_or(path);
+    Ok(Value::Str(path.to_string_lossy().into_owned()))
+}
+
 pub(crate) fn fs_exists(eng: &Engine, args: &[Value]) -> Result<Value> {
     Ok(Value::Bool(resolve(eng, text(args, 0)?).exists()))
 }

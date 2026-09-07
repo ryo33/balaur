@@ -13,8 +13,8 @@ use balaur_script::{Bindings as _, Value};
 
 use crate::engine::Engine;
 use crate::file_api::{
-    fs_exists, fs_list, fs_mkdir, fs_mtime, fs_read, fs_remove, fs_rename, fs_write, json_encode,
-    json_parse, toml_encode, toml_parse,
+    fs_absolute, fs_exists, fs_list, fs_mkdir, fs_mtime, fs_read, fs_remove, fs_rename, fs_write,
+    json_encode, json_parse, toml_encode, toml_parse,
 };
 use crate::rng::Pcg32;
 use crate::scene;
@@ -324,6 +324,11 @@ pub const ENGINE_OPS: &[EngineOp] = &[
         call: fs_mtime,
     },
     EngineOp {
+        module: "fs",
+        name: "absolute",
+        call: fs_absolute,
+    },
+    EngineOp {
         module: "toml",
         name: "parse",
         call: toml_parse,
@@ -558,6 +563,7 @@ fn document_fs(m: &mut dyn balaur_script::Bindings<Engine>) {
         ("remove", &[], "(path: string)", "Delete a project-relative file, or a directory and everything under it; false when there was nothing there."),
         ("mkdir", &[], "(path: string)", "Create a project-relative directory and every parent it needs."),
         ("rename", &[], "(from: string, to: string)", "Move a project-relative file or directory, creating the destination's parent first."),
+        ("absolute", &[], "(path: string)", "Where a project-relative path is on disk, as an absolute path; an absolute path comes back as it is."),
         ("mtime", &[], "(path: string)", "When a file last changed, in seconds since the Unix epoch; nil for one that is not there."),
     ]);
 }

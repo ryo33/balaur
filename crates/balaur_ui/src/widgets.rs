@@ -111,6 +111,13 @@ impl Opts {
             _ => None,
         }
     }
+    /// A list option, `None` when the caller gave none.
+    pub(crate) fn list(&self, key: &str) -> Option<&[Value]> {
+        match self.get(key) {
+            Some(Value::List(items)) => Some(items),
+            _ => None,
+        }
+    }
     /// A list of line numbers, for gutter markers.
     pub(crate) fn lines(&self, key: &str) -> Vec<usize> {
         match self.get(key) {
@@ -184,6 +191,7 @@ pub const WIDGET_KINDS: &[(&str, &str)] = &[
     ("WIDGET_PANEL", "panel"),
     ("WIDGET_ROW", "row"),
     ("WIDGET_COLUMN", "column"),
+    ("WIDGET_DRAW", "draw"),
 ];
 
 /// Font families the theme registers.
@@ -288,7 +296,11 @@ pub(crate) fn text_field(
         }
         let response = if h > 0.0 {
             let radius = opts.px("radius", 0.0);
-            let corner = if radius > 0.0 { pill_radius(radius * 2.0) } else { pill_radius(sc(5.0) * 2.0) };
+            let corner = if radius > 0.0 {
+                pill_radius(radius * 2.0)
+            } else {
+                pill_radius(sc(5.0) * 2.0)
+            };
             egui::Frame::new()
                 .fill(opts.color("fill", Color32::TRANSPARENT))
                 .stroke(Stroke::new(1.0, opts.color("stroke", Color32::TRANSPARENT)))
@@ -336,6 +348,27 @@ impl SyntaxColors {
             ident: opts.color("k_fn", Color32::from_rgb(0xee, 0xf1, 0xf4)),
             builtin: opts.color("k_type", Color32::from_rgb(0xb6, 0xd8, 0xcc)),
             punct: opts.color("k_punc", Color32::from_rgb(0x98, 0xa1, 0xaa)),
+        }
+    }
+
+    pub(crate) const fn ident(&self) -> Color32 {
+        self.ident
+    }
+
+    /// The colour of a language server's token kind; a section header's key
+    /// reads as a keyword so the file's structure stands out.
+    pub(crate) fn token(&self, kind: &str, header: bool) -> Color32 {
+        match kind {
+            "keyword" => self.key,
+            "number" => self.number,
+            "string" => self.string,
+            "comment" => self.comment,
+            "operator" | "punctuation" => self.punct,
+            "section_marker" | "extension_marker" | "extension_ident" | "decorator" | "macro" => {
+                self.builtin
+            }
+            _ if header => self.key,
+            _ => self.ident,
         }
     }
 }
@@ -483,7 +516,7 @@ pub(crate) struct Marks {
 }
 
 impl Marks {
-    fn from_opts(opts: &Opts) -> Self {
+    pub(crate) fn from_opts(opts: &Opts) -> Self {
         Self {
             errors: opts.lines("problems"),
             warnings: opts.lines("warnings"),
@@ -493,7 +526,7 @@ impl Marks {
     }
 
     /// The colour a 1-based line is flagged in; an error outranks a warning.
-    fn color(&self, line: usize) -> Option<Color32> {
+    pub(crate) fn color(&self, line: usize) -> Option<Color32> {
         if self.errors.contains(&line) {
             Some(self.error_color)
         } else if self.warnings.contains(&line) {
@@ -590,13 +623,11 @@ pub(crate) fn highlight(
     job
 }
 
-/// An editable, syntax-highlighted code editor with a line-number gutter.
-/// The buffer persists per `id` in `UiState`; returns (text, changed).
 /// The column beside the code: line numbers, breakpoint dots, and the row
 /// the debugger is stopped on.
-struct Gutter {
+pub(crate) struct Gutter {
     width: f32,
-    color: Color32,
+    pub(crate) color: Color32,
     size: f32,
     breakpoints: Vec<usize>,
     current_line: usize,
@@ -606,7 +637,7 @@ struct Gutter {
 }
 
 impl Gutter {
-    fn from_opts(opts: &Opts, size: f32) -> Self {
+    pub(crate) fn from_opts(opts: &Opts, size: f32) -> Self {
         Self {
             width: opts.px("gutter_width", 34.0),
             color: opts.color("gutter_color", Color32::from_rgb(0x76, 0x7e, 0x88)),
@@ -623,7 +654,7 @@ impl Gutter {
     }
 
     /// Paint `n_lines` rows; returns the row clicked this frame, if any.
-    fn paint(&self, ui: &mut egui::Ui, n_lines: usize, row_h: f32) -> Option<i64> {
+    pub(crate) fn paint(&self, ui: &mut egui::Ui, n_lines: usize, row_h: f32) -> Option<i64> {
         let (rect, response) =
             ui.allocate_exact_size(vec2(self.width, row_h * n_lines as f32), Sense::click());
         let clicked = response
@@ -673,76 +704,6 @@ impl Gutter {
         }
         clicked
     }
-}
-
-/// Returns the buffer, whether it changed, and the gutter line clicked this
-/// frame, if any: `breakpoints` marks lines, `current_line` highlights one.
-pub(crate) fn code_editor(
-    eng: &Engine,
-    id: &str,
-    source: &str,
-    opts: &Opts,
-) -> anyhow::Result<(String, bool, Option<i64>)> {
-    // `language` overrides; otherwise highlight whatever the project is
-    // written in, so an editor shows Rune as Rune.
-    let language = opts.string("language").unwrap_or_else(|| {
-        eng.try_resource::<balaur_core::project::ProjectManifest>()
-            .map_or_else(|| "rune".to_string(), |m| m.borrow().language.clone())
-    });
-    let syntax = syntax_for(&language);
-    let state = eng.resource::<UiState>();
-    let mut buffer = {
-        let cached = state.borrow().text_buffers.get(id).cloned();
-        if let Some(b) = cached {
-            b
-        } else {
-            state
-                .borrow_mut()
-                .text_buffers
-                .insert(id.to_string(), source.to_string());
-            source.to_string()
-        }
-    };
-    let size = opts.px("size", 12.5);
-    let gutter = Gutter::from_opts(opts, size);
-    let colors = SyntaxColors::from_opts(opts);
-    let marks = Marks::from_opts(opts);
-    let font = FontId::new(size, theme::family("mono"));
-    let (changed, clicked) = with_ui(|ui| {
-        let font = font.clone();
-        let row_h = ui
-            .painter()
-            .layout_no_wrap("0".into(), font.clone(), gutter.color)
-            .size()
-            .y;
-        let mut changed = false;
-        let mut clicked = None;
-        ui.horizontal(|ui| {
-            ui.spacing_mut().item_spacing = vec2(0.0, 0.0);
-            let n_lines = buffer.split('\n').count().max(1);
-            clicked = gutter.paint(ui, n_lines, row_h);
-            ui.add_space(sc(12.0));
-            let mut layouter = |ui: &egui::Ui, buf: &dyn egui::TextBuffer, _wrap: f32| {
-                let mut job = highlight(buf.as_str(), syntax, &font, &colors, &marks);
-                job.wrap.max_width = f32::INFINITY;
-                ui.fonts_mut(|f| f.layout_job(job))
-            };
-            let response = ui.add(
-                egui::TextEdit::multiline(&mut buffer)
-                    .id(egui::Id::new(id.to_string()))
-                    .frame(egui::Frame::NONE)
-                    .desired_width(ui.available_width())
-                    .layouter(&mut layouter),
-            );
-            changed = response.changed();
-        });
-        Ok((changed, clicked))
-    })?;
-    state
-        .borrow_mut()
-        .text_buffers
-        .insert(id.to_string(), buffer.clone());
-    Ok((buffer, changed, clicked))
 }
 
 /// Draw a PNG from the project (cached as an egui texture by path).

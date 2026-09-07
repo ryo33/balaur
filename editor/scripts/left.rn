@@ -1,6 +1,7 @@
 // Left column (262 px): node tree + per-persona secondary panel.
 
 use crate::anim;
+use crate::eurefile;
 use crate::icons;
 use crate::model;
 use crate::shell;
@@ -157,6 +158,7 @@ fn secondary_content(S) {
                 let rel = "scripts/" + f.name;
                 let n = util::count_lines(model::source(S, rel).unwrap_or(""));
                 rows.push(row("‹›", f.name, format!("{} L", n), || {
+                    eurefile::close(S);
                     // Jump to the node using this script.
                     for (i, node) in S.doc.iter().enumerate() {
                         if model::script_rel(node) == Some(rel) {
@@ -167,8 +169,11 @@ fn secondary_content(S) {
                 }));
             }
         }
+        for r in eurefile::rows(S) {
+            rows.push(r);
+        }
         // `return`: a bare tuple after an `if` block parses as a call on the block's value.
-        return ("Rune modules", rows);
+        return ("Modules & Eure files", rows);
     } else if S.persona == "phys" {
         // A 2D scene carries `body2d`/`collider2d`; reading `body` alone left
         // this panel empty for every 2D project.

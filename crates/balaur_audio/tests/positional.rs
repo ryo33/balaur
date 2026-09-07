@@ -107,7 +107,10 @@ fn pan_of(app: &App, handle: u64) -> f32 {
 #[test]
 fn a_sound_within_min_distance_is_at_full_volume_and_centred() {
     let listener = ears_at(Vec3::ZERO);
-    let placement = spatial::place(&listener, &Emitter::new(Vec3::new(0.5, 0.0, 0.0), 1.0, 50.0, 0.0));
+    let placement = spatial::place(
+        &listener,
+        &Emitter::new(Vec3::new(0.5, 0.0, 0.0), 1.0, 50.0, 0.0),
+    );
     assert!((placement.gain - 1.0).abs() < 1e-6, "{placement:?}");
     assert!(placement.pan.abs() < 0.51, "half a unit is not a hard pan");
     assert!((placement.pitch - 1.0).abs() < 1e-6, "nothing is moving");
@@ -140,14 +143,23 @@ fn a_sound_past_max_distance_is_silent() {
 #[test]
 fn a_sound_to_the_listeners_right_leans_right() {
     let listener = ears_at(Vec3::ZERO);
-    let right = spatial::place(&listener, &Emitter::new(Vec3::new(10.0, 0.0, 0.0), 1.0, 50.0, 0.0));
-    let left = spatial::place(&listener, &Emitter::new(Vec3::new(-10.0, 0.0, 0.0), 1.0, 50.0, 0.0));
+    let right = spatial::place(
+        &listener,
+        &Emitter::new(Vec3::new(10.0, 0.0, 0.0), 1.0, 50.0, 0.0),
+    );
+    let left = spatial::place(
+        &listener,
+        &Emitter::new(Vec3::new(-10.0, 0.0, 0.0), 1.0, 50.0, 0.0),
+    );
     assert!((right.pan - 1.0).abs() < 1e-6, "{right:?}");
     assert!((left.pan + 1.0).abs() < 1e-6, "{left:?}");
 
     let [l, r] = spatial::stereo_gains(right.pan);
     assert!(r > l, "a sound on the right is louder on the right");
-    let ahead = spatial::place(&listener, &Emitter::new(Vec3::new(0.0, 0.0, 10.0), 1.0, 50.0, 0.0));
+    let ahead = spatial::place(
+        &listener,
+        &Emitter::new(Vec3::new(0.0, 0.0, 10.0), 1.0, 50.0, 0.0),
+    );
     assert!(ahead.pan.abs() < 1e-6, "straight ahead is centred");
 }
 
@@ -310,7 +322,10 @@ fn freeing_a_listener_node_leaves_the_ears_where_they_were() {
 
     let state = app.engine.resource::<AudioState>();
     let state = state.borrow();
-    assert!(state.listener().placed, "the ears are still where they were");
+    assert!(
+        state.listener().placed,
+        "the ears are still where they were"
+    );
     assert!((state.listener().position.x - 10.0).abs() < 1e-6);
 }
 
